@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class, TaskBox, Work, TeacherComment } from '@/lib/supabase'
-import { Send, Circle, Play, Pause, SkipBack, SkipForward, X, MessageCircle } from 'lucide-react'
+import { Send, Circle, Play, Pause, SkipBack, SkipForward, X, MessageCircle, Trash2, ThumbsUp, Heart, Sparkles, Smile } from 'lucide-react'
 import { ChevronLeft, ChevronRight, Users, Grid3X3, List } from 'lucide-react'
 import Link from 'next/link'
 import AnnotationLayer from '@/components/AnnotationLayer'
@@ -19,6 +19,10 @@ interface ClassMemberWithUser {
 interface WorkWithStudent extends Work {
     users?: { name: string }
     teacher_comments?: TeacherComment[]
+    reactions?: {
+        reaction_type: string
+        users: { name: string }
+    }[]
 }
 
 export default function TeacherGradePage() {
@@ -38,6 +42,7 @@ export default function TeacherGradePage() {
     const [commentText, setCommentText] = useState('')
     const [isSavingComment, setIsSavingComment] = useState(false)
     const [showAnnotation, setShowAnnotation] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     // Playback State
     const [playbackWorks, setPlaybackWorks] = useState<WorkWithStudent[]>([])
@@ -76,7 +81,8 @@ export default function TeacherGradePage() {
                     *,
                     users:student_id (name),
                     teacher_comments (id, comment, created_at),
-                    task_boxes (unit_name, task_name)
+                    task_boxes (unit_name, task_name),
+                    reactions (reaction_type, users:sender_id (name))
                 `)
                 .eq('student_id', studentId)
                 .order('created_at', { ascending: true })
@@ -183,7 +189,8 @@ export default function TeacherGradePage() {
                 .select(`
                     *,
                     users:student_id (name),
-                    teacher_comments (id, comment, created_at)
+                    teacher_comments (id, comment, created_at),
+                    reactions (reaction_type, users:sender_id (name))
                 `)
                 .eq('task_box_id', selectedTaskBox.id)
 
@@ -210,6 +217,40 @@ export default function TeacherGradePage() {
             setSelectedMember(member)
             // Prefill with existing comment if any
             setCommentText(work.teacher_comments?.[0]?.comment || '')
+        }
+    }
+
+    const deleteWork = async () => {
+        if (!selectedWork || !confirm('本当に削除しますか？\n削除された作品は元に戻せません。')) return
+        setIsDeleting(true)
+        try {
+            const { error } = await supabase
+                .from('works')
+                .delete()
+                .eq('id', selectedWork.id)
+
+            if (error) throw error
+
+            // Update local state and close modal
+            setWorks(prev => prev.filter(w => w.id !== selectedWork.id))
+            setPlaybackWorks(prev => prev.filter(w => w.id !== selectedWork.id))
+            setSelectedWork(null)
+            setSelectedMember(null)
+        } catch (error) {
+            console.error('Error deleting work:', error)
+            alert('削除に失敗しました')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const getReactionIcon = (type: string) => {
+        switch (type) {
+            case 'awesome': return <Sparkles className="w-3 h-3 text-amber-500" />
+            case 'great': return <Heart className="w-3 h-3 text-rose-500" />
+            case 'good': return <ThumbsUp className="w-3 h-3 text-blue-500" />
+            case 'smile': return <Smile className="w-3 h-3 text-green-500" />
+            default: return null
         }
     }
 
@@ -417,15 +458,25 @@ export default function TeacherGradePage() {
                                     {(selectedMember?.users as any)?.name || 'Unknown'}
                                 </h2>
                             </div>
-                            <button
-                                onClick={() => {
-                                    setSelectedWork(null)
-                                    setSelectedMember(null)
-                                }}
-                                className="p-2 rounded-full hover:bg-slate-100"
-                            >
-                                <X className="w-6 h-6 text-slate-500" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={deleteWork}
+                                    disabled={isDeleting}
+                                    className="p-2 rounded-full hover:bg-red-50 text-red-400 hover:text-red-500 transition"
+                                    title="削除"
+                                >
+                                    <Trash2 className="w-6 h-6" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setSelectedWork(null)
+                                        setSelectedMember(null)
+                                    }}
+                                    className="p-2 rounded-full hover:bg-slate-100"
+                                >
+                                    <X className="w-6 h-6 text-slate-500" />
+                                </button>
+                            </div>
                         </div>
 
                         <div
@@ -469,6 +520,25 @@ export default function TeacherGradePage() {
                                 <p className="text-slate-900">{selectedWork.reflection}</p>
                             </div>
                         )}
+
+                        {/* Reactions Section */}
+                        {selectedWork.reactions && selectedWork.reactions.length > 0 && (
+                            <div className="bg-amber-50/50 rounded-xl p-4 mt-4 border border-amber-100">
+                                <p className="text-xs text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" />
+                                    友達からのリアクション ({selectedWork.reactions.length})
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedWork.reactions.map((reaction, i) => (
+                                        <div key={i} className="bg-white px-2 py-1 rounded-full text-xs text-slate-600 border border-amber-100 flex items-center gap-1 shadow-sm">
+                                            {getReactionIcon(reaction.reaction_type)}
+                                            {(reaction.users as any)?.name || 'Unknown'}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
 
                         {/* Teacher Comment Section */}
                         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mt-4">

@@ -9,6 +9,7 @@ interface AuthContextType {
     user: User | null
     loading: boolean
     signIn: (email: string, password: string) => Promise<{ error: Error | null }>
+    signUp: (email: string, password: string, name: string, role: string) => Promise<{ error: Error | null }>
     signOut: () => Promise<void>
 }
 
@@ -87,6 +88,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
+    const signUp = async (email: string, password: string, name: string, role: string) => {
+        try {
+            // 1. SignUp with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+            })
+            if (authError) throw authError
+
+            if (authData.user) {
+                // 2. Create Public User Record
+                const { error: dbError } = await supabase
+                    .from('users')
+                    .insert({
+                        id: authData.user.id,
+                        email,
+                        name,
+                        role
+                    })
+
+                if (dbError) throw dbError
+
+                // Fetch user data to update context state immediately
+                await fetchUser(authData.user.id)
+            }
+
+            return { error: null }
+        } catch (error) {
+            console.error('SignUp Error:', error)
+            return { error: error as Error }
+        }
+    }
+
+
     const signOut = async () => {
         await supabase.auth.signOut()
         setUser(null)
@@ -94,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signIn, signOut }}>
+        <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     )

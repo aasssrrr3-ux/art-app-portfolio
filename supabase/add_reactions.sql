@@ -61,7 +61,8 @@ CREATE POLICY "Teachers can view all reactions"
     USING (
         EXISTS (
             SELECT 1 FROM public.works w
-            JOIN public.classes c ON c.id = (SELECT class_id FROM public.task_boxes WHERE id = w.task_box_id)
+            JOIN public.task_boxes tb ON w.task_box_id = tb.id
+            JOIN public.classes c ON tb.class_id = c.id
             WHERE w.id = reactions.work_id
             AND c.teacher_id = auth.uid()
         )

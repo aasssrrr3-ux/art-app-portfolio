@@ -3,19 +3,22 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { ChevronLeft, Mail, Lock, LogIn } from 'lucide-react'
+import { ChevronLeft, Mail, Lock, LogIn, UserPlus, Key } from 'lucide-react'
 import Link from 'next/link'
 
 function LoginForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const { signIn, user, loading } = useAuth()
+    const { signIn, signUp, user, loading } = useAuth()
 
     const role = searchParams.get('role') || 'student'
     const isTeacher = role === 'teacher'
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [name, setName] = useState('') // For signup
+    const [secretCode, setSecretCode] = useState('') // For teacher signup
+    const [isLoginMode, setIsLoginMode] = useState(true) // Switch between login and signup
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
 
@@ -35,12 +38,30 @@ function LoginForm() {
         setIsLoading(true)
 
         try {
-            const { error } = await signIn(email, password)
-            if (error) {
-                setError('メールアドレスまたはパスワードが正しくありません')
+            if (isLoginMode) {
+                // Login
+                const { error } = await signIn(email, password)
+                if (error) {
+                    setError('メールアドレスまたはパスワードが正しくありません')
+                }
+            } else {
+                // Signup
+                if (isTeacher) {
+                    // Check Secret Code
+                    const correctCode = process.env.NEXT_PUBLIC_TEACHER_SECRET_CODE
+                    if (!correctCode || secretCode !== correctCode) {
+                        throw new Error('合言葉が間違っています')
+                    }
+                }
+
+                const { error } = await signUp(email, password, name, role)
+                if (error) {
+                    throw error
+                }
+                // Successful signup will auto-login via AuthContext
             }
-        } catch (err) {
-            setError('ログインに失敗しました')
+        } catch (err: any) {
+            setError(err.message || 'エラーが発生しました')
         } finally {
             setIsLoading(false)
         }
@@ -56,10 +77,10 @@ function LoginForm() {
                     </Link>
                     <div>
                         <p className="page-subtitle">
-                            {isTeacher ? 'TEACHER LOGIN' : 'STUDENT LOGIN'}
+                            {isTeacher ? 'TEACHER ACCESS' : 'STUDENT ACCESS'}
                         </p>
                         <h1 className="page-title">
-                            {isTeacher ? '先生ログイン' : '生徒ログイン'}
+                            {isTeacher ? (isLoginMode ? '先生ログイン' : '先生アカウント作成') : '生徒ログイン'}
                         </h1>
                     </div>
                 </div>
@@ -103,6 +124,47 @@ function LoginForm() {
                             </div>
                         </div>
 
+                        {/* Signup Fields */}
+                        {!isLoginMode && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        お名前
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full px-4 py-4 border-2 border-slate-200 rounded-xl text-base bg-white focus:outline-none focus:border-[#5b5fff] focus:ring-4 focus:ring-[#5b5fff]/10 transition"
+                                            placeholder="山田 太郎"
+                                            required={!isLoginMode}
+                                        />
+                                    </div>
+                                </div>
+
+                                {isTeacher && (
+                                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                                        <label className="block text-sm font-bold text-amber-800 mb-2 flex items-center gap-2">
+                                            <Key className="w-4 h-4" />
+                                            先生用の合言葉
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={secretCode}
+                                            onChange={(e) => setSecretCode(e.target.value)}
+                                            className="w-full px-4 py-4 border-2 border-amber-200 rounded-lg text-base bg-white focus:outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 transition"
+                                            placeholder="学校で共有された合言葉を入力"
+                                            required={!isLoginMode && isTeacher}
+                                        />
+                                        <p className="text-xs text-amber-600 mt-2">
+                                            ※先生アカウントを勝手に作成されないよう、合言葉が必要です。
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
                         {/* Error Message */}
                         {error && (
                             <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
@@ -120,11 +182,28 @@ function LoginForm() {
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <LogIn className="w-5 h-5" />
-                                    ログイン
+                                    {isLoginMode ? <LogIn className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
+                                    {isLoginMode ? 'ログイン' : 'アカウント作成'}
                                 </>
                             )}
                         </button>
+
+                        {/* Switch Mode Button */}
+                        {isTeacher && (
+                            <div className="text-center pt-4 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsLoginMode(!isLoginMode)
+                                        setError('')
+                                        setSecretCode('')
+                                    }}
+                                    className="text-sm text-[#5b5fff] hover:underline"
+                                >
+                                    {isLoginMode ? 'アカウントを新規作成する' : 'ログインに戻る'}
+                                </button>
+                            </div>
+                        )}
                     </form>
 
                     {/* Test Account Info */}
