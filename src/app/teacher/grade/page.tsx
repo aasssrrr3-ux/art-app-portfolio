@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class, TaskBox, Work, TeacherComment } from '@/lib/supabase'
-import { Send, Circle, Play, Pause, SkipBack, SkipForward, X, MessageCircle, Trash2, ThumbsUp, Heart, Sparkles, Smile } from 'lucide-react'
+import { Send, Circle, Play, Pause, SkipBack, SkipForward, X, MessageCircle, Trash2, ThumbsUp, Heart, Sparkles, Smile, Settings, Key, UserMinus, AlertTriangle } from 'lucide-react'
 import { ChevronLeft, ChevronRight, Users, Grid3X3, List } from 'lucide-react'
 import Link from 'next/link'
 import AnnotationLayer from '@/components/AnnotationLayer'
@@ -12,6 +13,7 @@ import AnnotationLayer from '@/components/AnnotationLayer'
 interface ClassMemberWithUser {
     id: string
     user_id: string
+    class_id: string
     student_number: number
     users?: { name: string; email: string }
 }
@@ -43,6 +45,11 @@ export default function TeacherGradePage() {
     const [isSavingComment, setIsSavingComment] = useState(false)
     const [showAnnotation, setShowAnnotation] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+
+    // Admin State
+    const [managingMember, setManagingMember] = useState<ClassMemberWithUser | null>(null)
+    const [newPassword, setNewPassword] = useState('')
+    const [isAdminLoading, setIsAdminLoading] = useState(false)
 
     // Playback State
     const [playbackWorks, setPlaybackWorks] = useState<WorkWithStudent[]>([])
@@ -254,6 +261,67 @@ export default function TeacherGradePage() {
         }
     }
 
+    // Admin Actions
+    const handleResetPassword = async () => {
+        if (!managingMember || !newPassword.trim()) return
+        if (!confirm(`${(managingMember.users as any)?.name}さんのパスワードを変更しますか？`)) return
+
+        setIsAdminLoading(true)
+        try {
+            const res = await fetch('/api/teacher/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'resetPassword',
+                    studentId: managingMember.user_id,
+                    newPassword: newPassword.trim()
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            alert('パスワードを変更しました')
+            setNewPassword('')
+        } catch (error: any) {
+            console.error('Password reset failed:', error)
+            alert(`エラー: ${error.message}`)
+        } finally {
+            setIsAdminLoading(false)
+        }
+    }
+
+    const handleRemoveStudent = async () => {
+        if (!managingMember) return
+        if (!confirm(`${(managingMember.users as any)?.name}さんをクラスから削除しますか？\nこの操作は取り消せません。`)) return
+
+        setIsAdminLoading(true)
+        try {
+            const res = await fetch('/api/teacher/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'removeStudent',
+                    studentId: managingMember.user_id,
+                    classId: managingMember.class_id
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            alert('生徒をクラスから削除しました')
+            // Update local state
+            setMembers(prev => prev.filter(m => m.id !== managingMember.id))
+            setManagingMember(null)
+        } catch (error: any) {
+            console.error('Student removal failed:', error)
+            alert(`エラー: ${error.message}`)
+        } finally {
+            setIsAdminLoading(false)
+        }
+    }
+
     const submittedCount = members.filter(m => getSubmissionStatus(m.user_id)).length
     const submissionRate = members.length > 0 ? Math.round((submittedCount / members.length) * 100) : 0
 
@@ -397,7 +465,7 @@ export default function TeacherGradePage() {
                                                     <span className="badge-danger">⏳ NOT YET</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-4 text-right">
+                                            <td className="px-4 py-4 text-right flex items-center justify-end gap-2">
                                                 {submitted && (
                                                     <button
                                                         onClick={() => viewWork(member)}
@@ -406,6 +474,13 @@ export default function TeacherGradePage() {
                                                         VIEW WORK →
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => setManagingMember(member)}
+                                                    className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition"
+                                                    title="生徒管理"
+                                                >
+                                                    <Settings className="w-5 h-5" />
+                                                </button>
                                             </td>
                                         </tr>
                                     )
@@ -421,29 +496,105 @@ export default function TeacherGradePage() {
                             return (
                                 <div
                                     key={member.id}
-                                    onClick={() => work && viewWork(member)}
-                                    className={`card-soft-sm p-4 ${submitted ? 'bg-green-50 border-green-200 cursor-pointer hover:shadow-lg' : 'bg-red-50 border-red-200'} border transition`}
+                                    className={`card-soft-sm p-4 relative group ${submitted ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border transition`}
                                 >
-                                    {work ? (
-                                        <img
-                                            src={work.image_url}
-                                            alt="Work"
-                                            className="w-full aspect-square object-cover rounded-lg mb-3"
-                                        />
-                                    ) : (
-                                        <div className="w-full aspect-square bg-slate-200 rounded-lg mb-3 flex items-center justify-center text-slate-400">
-                                            未提出
-                                        </div>
-                                    )}
-                                    <p className="text-sm font-medium text-slate-900">
-                                        {member.student_number || '-'}. {(member.users as any)?.name || 'Unknown'}
-                                    </p>
+                                    <button
+                                        onClick={() => setManagingMember(member)}
+                                        className="absolute top-2 right-2 p-1.5 bg-white/80 rounded-full text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-white transition z-10"
+                                    >
+                                        <Settings className="w-4 h-4" />
+                                    </button>
+                                    <div
+                                        onClick={() => work && viewWork(member)}
+                                        className={submitted ? 'cursor-pointer' : ''}
+                                    >
+                                        {work ? (
+                                            <img
+                                                src={work.image_url}
+                                                alt="Work"
+                                                className="w-full aspect-square object-cover rounded-lg mb-3"
+                                            />
+                                        ) : (
+                                            <div className="w-full aspect-square bg-slate-200 rounded-lg mb-3 flex items-center justify-center text-slate-400">
+                                                未提出
+                                            </div>
+                                        )}
+                                        <p className="text-sm font-medium text-slate-900">
+                                            {member.student_number || '-'}. {(member.users as any)?.name || 'Unknown'}
+                                        </p>
+                                    </div>
                                 </div>
                             )
                         })}
                     </div>
                 )}
             </div>
+
+            {/* Admin Modal */}
+            {managingMember && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">生徒管理</h3>
+                                <p className="text-sm text-slate-500">{(managingMember.users as any)?.name} さん</p>
+                            </div>
+                            <button
+                                onClick={() => setManagingMember(null)}
+                                className="p-2 rounded-full hover:bg-slate-100"
+                            >
+                                <X className="w-6 h-6 text-slate-500" />
+                            </button>
+                        </div>
+
+                        {/* Password Reset */}
+                        <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                            <h4 className="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                                <Key className="w-5 h-5 text-slate-600" />
+                                パスワードリセット
+                            </h4>
+                            <p className="text-xs text-slate-500 mb-3">
+                                新しいパスワードを設定して、生徒に伝えてください。
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="新しいパスワード"
+                                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                />
+                                <button
+                                    onClick={handleResetPassword}
+                                    disabled={isAdminLoading || !newPassword}
+                                    className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                    変更
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Remove Student */}
+                        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                            <h4 className="font-bold text-red-700 flex items-center gap-2 mb-2">
+                                <UserMinus className="w-5 h-5" />
+                                クラスから削除
+                            </h4>
+                            <p className="text-xs text-red-600 mb-4">
+                                この生徒をクラスから削除します。生徒のデータは残りますが、このクラスにはアクセスできなくなります。
+                            </p>
+                            <button
+                                onClick={handleRemoveStudent}
+                                disabled={isAdminLoading}
+                                className="w-full py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <AlertTriangle className="w-4 h-4" />
+                                強制退会実行
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Work Detail Modal */}
             {selectedWork && (

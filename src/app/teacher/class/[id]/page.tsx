@@ -1,16 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class } from '@/lib/supabase'
-import { ChevronLeft, Users, Upload, UserPlus, Copy, Check, FileSpreadsheet, X, Download } from 'lucide-react'
+import { ChevronLeft, Users, Upload, UserPlus, Copy, Check, FileSpreadsheet, X, Download, Settings, Key, UserMinus, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import * as XLSX from 'xlsx'
 
 interface ClassMemberWithUser {
     id: string
     user_id: string
+    class_id: string
     student_number: number
     users?: { name: string; email: string }
 }
@@ -36,6 +38,11 @@ export default function TeacherClassDetailPage() {
     const [importError, setImportError] = useState('')
     const [codeCopied, setCodeCopied] = useState(false)
     const [fileName, setFileName] = useState('')
+
+    // Admin State
+    const [managingMember, setManagingMember] = useState<ClassMemberWithUser | null>(null)
+    const [newPassword, setNewPassword] = useState('')
+    const [isAdminLoading, setIsAdminLoading] = useState(false)
 
     useEffect(() => {
         if (!loading && !user) {
@@ -194,6 +201,67 @@ export default function TeacherClassDetailPage() {
         }
     }
 
+    // Admin Actions
+    const handleResetPassword = async () => {
+        if (!managingMember || !newPassword.trim()) return
+        if (!confirm(`${(managingMember.users as any)?.name}さんのパスワードを変更しますか？`)) return
+
+        setIsAdminLoading(true)
+        try {
+            const res = await fetch('/api/teacher/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'resetPassword',
+                    studentId: managingMember.user_id,
+                    newPassword: newPassword.trim()
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            alert('パスワードを変更しました')
+            setNewPassword('')
+        } catch (error: any) {
+            console.error('Password reset failed:', error)
+            alert(`エラー: ${error.message}`)
+        } finally {
+            setIsAdminLoading(false)
+        }
+    }
+
+    const handleRemoveStudent = async () => {
+        if (!managingMember) return
+        if (!confirm(`${(managingMember.users as any)?.name}さんをクラスから削除しますか？\n注意: 生徒はクラス一覧から消えますが、過去の作品データ自体はサーバーに残ります。`)) return
+
+        setIsAdminLoading(true)
+        try {
+            const res = await fetch('/api/teacher/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'removeStudent',
+                    studentId: managingMember.user_id,
+                    classId: managingMember.class_id || classId // fallback to param
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            alert('生徒をクラスから削除しました')
+            // Update local state
+            setMembers(prev => prev.filter(m => m.id !== managingMember.id))
+            setManagingMember(null)
+        } catch (error: any) {
+            console.error('Student removal failed:', error)
+            alert(`エラー: ${error.message}`)
+        } finally {
+            setIsAdminLoading(false)
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -249,13 +317,6 @@ export default function TeacherClassDetailPage() {
                         <FileSpreadsheet className="w-5 h-5" />
                         Excel/CSV登録
                     </button>
-                    <button
-                        onClick={() => alert('個別追加機能は開発中です')}
-                        className="btn-secondary flex items-center gap-2"
-                    >
-                        <UserPlus className="w-5 h-5" />
-                        個別追加
-                    </button>
                 </div>
 
                 {/* Members List */}
@@ -275,24 +336,101 @@ export default function TeacherClassDetailPage() {
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {members.map(member => (
-                                <div key={member.id} className="p-4 flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-[#5b5fff] flex items-center justify-center text-white font-bold">
-                                        {member.student_number}
+                                <div key={member.id} className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-[#5b5fff] flex items-center justify-center text-white font-bold">
+                                            {member.student_number}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-900">
+                                                {(member.users as any)?.name || 'Unknown'}
+                                            </p>
+                                            <p className="text-sm text-slate-500">
+                                                {(member.users as any)?.email}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-slate-900">
-                                            {(member.users as any)?.name || 'Unknown'}
-                                        </p>
-                                        <p className="text-sm text-slate-500">
-                                            {(member.users as any)?.email}
-                                        </p>
-                                    </div>
+                                    <button
+                                        onClick={() => setManagingMember(member)}
+                                        className="p-2 text-slate-400 hover:text-[#5b5fff] hover:bg-slate-100 rounded-full transition"
+                                        title="設定"
+                                    >
+                                        <Settings className="w-5 h-5" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Admin Modal */}
+            {managingMember && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">生徒管理</h3>
+                                <p className="text-sm text-slate-500">{(managingMember.users as any)?.name} さん</p>
+                            </div>
+                            <button
+                                onClick={() => setManagingMember(null)}
+                                className="p-2 rounded-full hover:bg-slate-100"
+                            >
+                                <X className="w-6 h-6 text-slate-500" />
+                            </button>
+                        </div>
+
+                        {/* Password Reset */}
+                        <div className="mb-6 p-4 bg-slate-50 rounded-xl">
+                            <h4 className="font-bold text-slate-900 flex items-center gap-2 mb-3">
+                                <Key className="w-5 h-5 text-slate-600" />
+                                パスワードリセット
+                            </h4>
+                            <p className="text-xs text-slate-500 mb-3">
+                                新しいパスワードを設定して、生徒に伝えてください。
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="新しいパスワード"
+                                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                                />
+                                <button
+                                    onClick={handleResetPassword}
+                                    disabled={isAdminLoading || !newPassword}
+                                    className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                    変更
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Remove Student */}
+                        <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                            <h4 className="font-bold text-red-700 flex items-center gap-2 mb-2">
+                                <UserMinus className="w-5 h-5" />
+                                クラスから削除
+                            </h4>
+                            <p className="text-xs text-red-600 mb-4">
+                                この生徒をクラスから削除します。
+                                <br />
+                                <strong>【重要】クラス一覧から表示されなくなりますが、作品データは「退会済み生徒」としてサーバーに残ります（現時点の仕様）。</strong>
+                            </p>
+                            <button
+                                onClick={handleRemoveStudent}
+                                disabled={isAdminLoading}
+                                className="w-full py-2 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <AlertTriangle className="w-4 h-4" />
+                                強制退会実行
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Excel Import Modal */}
             {showImportModal && (
