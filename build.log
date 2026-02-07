@@ -1,0 +1,38 @@
+
+> art-app-3@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.9s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/15) ...
+  Generating static pages using 7 workers (3/15) 
+  Generating static pages using 7 workers (7/15) 
+  Generating static pages using 7 workers (11/15) 
+✓ Generating static pages using 7 workers (15/15) in 560.7ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/import-students
+├ ○ /login
+├ ○ /student/favorites
+├ ○ /student/gallery
+├ ○ /student/home
+├ ○ /student/portfolio
+├ ○ /student/submit
+├ ƒ /teacher/class/[id]
+├ ○ /teacher/grade
+├ ○ /teacher/home
+├ ○ /teacher/share
+└ ○ /teacher/taskbox
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
