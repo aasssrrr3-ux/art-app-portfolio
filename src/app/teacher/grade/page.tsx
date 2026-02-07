@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class, TaskBox, Work, TeacherComment } from '@/lib/supabase'
-import { Send, Circle } from 'lucide-react'
-import { ChevronLeft, ChevronRight, Users, Grid3X3, List, X } from 'lucide-react'
+import { Send, Circle, Play, Pause, SkipBack, SkipForward, X, MessageCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Users, Grid3X3, List } from 'lucide-react'
 import Link from 'next/link'
 import AnnotationLayer from '@/components/AnnotationLayer'
 
@@ -38,6 +38,74 @@ export default function TeacherGradePage() {
     const [commentText, setCommentText] = useState('')
     const [isSavingComment, setIsSavingComment] = useState(false)
     const [showAnnotation, setShowAnnotation] = useState(false)
+
+    // Playback State
+    const [playbackWorks, setPlaybackWorks] = useState<WorkWithStudent[]>([])
+    const [isPlaybackModalOpen, setIsPlaybackModalOpen] = useState(false)
+    const [currentIndex, setCurrentIndex] = useState(0)
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [playSpeed, setPlaySpeed] = useState<1 | 2 | 4>(1)
+    const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+    // Playback Logic
+    useEffect(() => {
+        if (isPlaying && playbackWorks.length > 0) {
+            playIntervalRef.current = setInterval(() => {
+                setCurrentIndex(prev => {
+                    if (prev >= playbackWorks.length - 1) {
+                        setIsPlaying(false)
+                        return prev
+                    }
+                    return prev + 1
+                })
+            }, 2000 / playSpeed)
+        }
+
+        return () => {
+            if (playIntervalRef.current) {
+                clearInterval(playIntervalRef.current)
+            }
+        }
+    }, [isPlaying, playSpeed, playbackWorks])
+
+    const fetchStudentPortfolio = async (studentId: string) => {
+        try {
+            const { data } = await supabase
+                .from('works')
+                .select(`
+                    *,
+                    users:student_id (name),
+                    teacher_comments (id, comment, created_at),
+                    task_boxes (unit_name, task_name)
+                `)
+                .eq('student_id', studentId)
+                .order('created_at', { ascending: true })
+
+            if (data) {
+                setPlaybackWorks(data)
+                setCurrentIndex(0)
+                setIsPlaybackModalOpen(true)
+                setIsPlaying(true)
+            }
+        } catch (error) {
+            console.error('Error fetching student portfolio:', error)
+        }
+    }
+
+    const closePlaybackModal = () => {
+        setIsPlaybackModalOpen(false)
+        setIsPlaying(false)
+        setPlaybackWorks([])
+        setCurrentIndex(0)
+    }
+
+    const togglePlayback = () => {
+        if (currentIndex >= playbackWorks.length - 1) {
+            setCurrentIndex(0)
+        }
+        setIsPlaying(!isPlaying)
+    }
+
 
     useEffect(() => {
         if (!loading && !user) {
@@ -377,6 +445,15 @@ export default function TeacherGradePage() {
                             </div>
                         </div>
 
+                        {/* Portfolio Playback Button */}
+                        <button
+                            onClick={() => selectedMember && fetchStudentPortfolio(selectedMember.user_id)}
+                            className="w-full py-3 mb-4 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition flex items-center justify-center gap-2"
+                        >
+                            <Play className="w-5 h-5" />
+                            この生徒のポートフォリオを再生
+                        </button>
+
                         {/* Annotation Button */}
                         <button
                             onClick={() => setShowAnnotation(true)}
@@ -481,6 +558,161 @@ export default function TeacherGradePage() {
                     onClose={() => setShowAnnotation(false)}
                 />
             )}
+
+            {/* Playback Modal */}
+            {isPlaybackModalOpen && playbackWorks.length > 0 && (
+                <div className="fixed inset-0 bg-black/95 z-[60] flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 text-white">
+                        <div>
+                            <p className="text-xs text-white/60 uppercase tracking-wider">
+                                PORTFOLIO PLAYBACK
+                            </p>
+                            <h2 className="text-lg font-bold">
+                                {(playbackWorks[0].users as any)?.name}さんの軌跡
+                            </h2>
+                        </div>
+                        <button
+                            onClick={closePlaybackModal}
+                            className="p-2 rounded-full hover:bg-white/10 transition"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 gap-4">
+                        {/* Image */}
+                        <div className="flex-1 flex items-center justify-center">
+                            <div
+                                className="relative cursor-pointer group"
+                                onClick={() => setIsImageZoomed(true)} // Use global zoom
+                            >
+                                <img
+                                    src={playbackWorks[currentIndex].image_url}
+                                    alt="Work"
+                                    className="max-h-[50vh] md:max-h-[70vh] w-auto rounded-2xl transition-transform group-hover:scale-[1.02]"
+                                    style={{ filter: `brightness(${playbackWorks[currentIndex].brightness || 100}%)` }}
+                                />
+                                <div className="absolute bottom-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                                    {currentIndex + 1} / {playbackWorks.length}
+                                </div>
+                                <div className="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                                    {(playbackWorks[currentIndex] as any).task_boxes?.unit_name || '未分類'} - {(playbackWorks[currentIndex] as any).task_boxes?.task_name || '課題なし'}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Controls & Info Panel */}
+                        <div className="md:w-80 space-y-4">
+                            {/* Playback Controls */}
+                            <div className="bg-slate-900 rounded-2xl p-4">
+                                <div className="flex items-center justify-center gap-4 mb-4">
+                                    <button
+                                        onClick={() => {
+                                            if (currentIndex > 0) {
+                                                setCurrentIndex(prev => prev - 1)
+                                                setIsPlaying(false)
+                                            }
+                                        }}
+                                        disabled={currentIndex === 0}
+                                        className="p-3 rounded-full hover:bg-white/10 disabled:opacity-30 transition"
+                                    >
+                                        <SkipBack className="w-6 h-6 text-white" />
+                                    </button>
+                                    <button
+                                        onClick={togglePlayback}
+                                        className="p-4 bg-[#5b5fff] rounded-full hover:bg-[#4a4eee] transition"
+                                    >
+                                        {isPlaying ? (
+                                            <Pause className="w-8 h-8 text-white" />
+                                        ) : (
+                                            <Play className="w-8 h-8 text-white ml-1" />
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (currentIndex < playbackWorks.length - 1) {
+                                                setCurrentIndex(prev => prev + 1)
+                                                setIsPlaying(false)
+                                            }
+                                        }}
+                                        disabled={currentIndex >= playbackWorks.length - 1}
+                                        className="p-3 rounded-full hover:bg-white/10 disabled:opacity-30 transition"
+                                    >
+                                        <SkipForward className="w-6 h-6 text-white" />
+                                    </button>
+                                </div>
+
+                                {/* Speed Controls */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex gap-1">
+                                        {([1, 2, 4] as const).map(speed => (
+                                            <button
+                                                key={speed}
+                                                onClick={() => setPlaySpeed(speed)}
+                                                className={`px-3 py-1 rounded-full text-xs font-medium transition ${playSpeed === speed
+                                                    ? 'bg-[#5b5fff] text-white'
+                                                    : 'bg-white/10 text-white/60 hover:bg-white/20'
+                                                    }`}
+                                            >
+                                                x{speed}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="text-white font-bold">
+                                        <span className="text-2xl">{currentIndex + 1}</span>
+                                        <span className="text-white/60">/{playbackWorks.length}</span>
+                                    </div>
+                                </div>
+
+                                {/* Progress Bar */}
+                                <div className="mt-4 flex gap-1">
+                                    {playbackWorks.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                setCurrentIndex(idx)
+                                                setIsPlaying(false)
+                                            }}
+                                            className={`flex-1 h-1 rounded-full transition ${idx <= currentIndex ? 'bg-[#5b5fff]' : 'bg-white/20'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Reflection */}
+                            {playbackWorks[currentIndex].reflection && (
+                                <div className="bg-white rounded-2xl p-4">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
+                                        感想・こだわり
+                                    </p>
+                                    <p className="text-slate-900 text-sm">{playbackWorks[currentIndex].reflection}</p>
+                                </div>
+                            )}
+
+                            {/* Teacher Comment */}
+                            {playbackWorks[currentIndex].teacher_comments && playbackWorks[currentIndex].teacher_comments!.length > 0 && (
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                                    <p className="text-xs text-emerald-600 uppercase tracking-wider mb-2">
+                                        先生からのコメント
+                                    </p>
+                                    <p className="text-slate-900 text-sm">
+                                        {playbackWorks[currentIndex].teacher_comments![0].comment}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Date */}
+                            <p className="text-xs text-white/40 text-center">
+                                {new Date(playbackWorks[currentIndex].created_at).toLocaleString('ja-JP')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }
