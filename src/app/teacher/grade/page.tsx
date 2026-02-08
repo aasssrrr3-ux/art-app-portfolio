@@ -190,8 +190,9 @@ export default function TeacherGradePage() {
 
     const fetchWorks = async () => {
         if (!selectedTaskBox) return
+        console.log('[GradeView] Fetching works for TaskBox:', selectedTaskBox.id, selectedTaskBox.task_name)
         try {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('works')
                 .select(`
                     *,
@@ -200,6 +201,12 @@ export default function TeacherGradePage() {
                     reactions (reaction_type, users:sender_id (name))
                 `)
                 .eq('task_box_id', selectedTaskBox.id)
+
+            if (error) {
+                console.error('[GradeView] Error fetching works:', error)
+            } else {
+                console.log('[GradeView] Fetched works:', data?.length, data)
+            }
 
             setWorks(data || [])
         } catch (error) {
@@ -680,12 +687,24 @@ export default function TeacherGradePage() {
                                     友達からのリアクション ({selectedWork.reactions.length})
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {selectedWork.reactions.map((reaction, i) => (
-                                        <div key={i} className="bg-white px-2 py-1 rounded-full text-xs text-slate-600 border border-amber-100 flex items-center gap-1 shadow-sm">
-                                            {getReactionIcon(reaction.reaction_type)}
-                                            {(reaction.users as any)?.name || 'Unknown'}
-                                        </div>
-                                    ))}
+                                    {selectedWork.reactions.map((reaction, i) => {
+                                        const reactionLabels: Record<string, string> = {
+                                            'awesome': '素晴らしい！',
+                                            'great': 'すごいね',
+                                            'good': 'いいね',
+                                            'smile': '面白い！'
+                                        }
+                                        const label = reactionLabels[reaction.reaction_type] || reaction.reaction_type
+
+                                        return (
+                                            <div key={i} className="bg-white px-2 py-1 rounded-full text-xs text-slate-600 border border-amber-100 flex items-center gap-1 shadow-sm">
+                                                {getReactionIcon(reaction.reaction_type)}
+                                                <span className="font-bold text-amber-600">{label}</span>
+                                                <span className="text-slate-400 mx-1">/</span>
+                                                {(reaction.users as any)?.name || 'Unknown'}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -742,6 +761,37 @@ export default function TeacherGradePage() {
                         <p className="text-xs text-slate-400 mt-4 text-center">
                             提出日時: {new Date(selectedWork.created_at).toLocaleString('ja-JP')}
                         </p>
+
+                        {/* Share Button (New) */}
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                            <button
+                                onClick={async () => {
+                                    if (!selectedWork || !user || !selectedClass) return
+                                    if (!confirm('この作品を「クラスの共有資料」に追加しますか？\n（クラス全員が見られるようになります）')) return
+
+                                    try {
+                                        const { error } = await supabase
+                                            .from('shared_resources')
+                                            .insert({
+                                                class_id: selectedClass.id,
+                                                teacher_id: user.id,
+                                                title: `${(selectedMember?.users as any)?.name}さんの作品 - ${selectedTaskBox?.task_name}`,
+                                                image_url: selectedWork.image_url
+                                            })
+
+                                        if (error) throw error
+                                        alert('資料に追加しました！\n生徒は「共有資料」から閲覧できます。')
+                                    } catch (error) {
+                                        console.error('Error sharing resource:', error)
+                                        alert('追加に失敗しました')
+                                    }
+                                }}
+                                className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-medium hover:bg-indigo-100 transition flex items-center justify-center gap-2"
+                            >
+                                <Users className="w-5 h-5" />
+                                この作品をクラスの資料として共有する
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
