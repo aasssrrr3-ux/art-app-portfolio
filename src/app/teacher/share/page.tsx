@@ -37,9 +37,9 @@ export default function TeacherSharePage() {
 
     // Work Selection State
     const [isWorkSelectorOpen, setIsWorkSelectorOpen] = useState(false)
-    const [students, setStudents] = useState<ClassMemberWithUser[]>([])
-    const [studentWorks, setStudentWorks] = useState<WorkWithTask[]>([])
-    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+    const [taskBoxes, setTaskBoxes] = useState<{ id: string; task_name: string }[]>([])
+    const [selectedTaskBoxId, setSelectedTaskBoxId] = useState<string | null>(null)
+    const [unitWorks, setUnitWorks] = useState<(Work & { users: { name: string } })[]>([])
     const [loadingWorks, setLoadingWorks] = useState(false)
 
     useEffect(() => {
@@ -56,15 +56,17 @@ export default function TeacherSharePage() {
 
     useEffect(() => {
         if (selectedClass) {
-            fetchStudents()
+            fetchTaskBoxes()
         }
     }, [selectedClass])
 
     useEffect(() => {
-        if (selectedStudentId) {
-            fetchStudentWorks(selectedStudentId)
+        if (selectedTaskBoxId) {
+            fetchWorksByTaskBox(selectedTaskBoxId)
+        } else {
+            setUnitWorks([])
         }
-    }, [selectedStudentId])
+    }, [selectedTaskBoxId])
 
     useEffect(() => {
         if (mode === 'camera') {
@@ -90,35 +92,45 @@ export default function TeacherSharePage() {
         }
     }
 
-    const fetchStudents = async () => {
+    const fetchTaskBoxes = async () => {
         if (!selectedClass) return
         try {
             const { data } = await supabase
-                .from('class_members')
-                .select(`
-                    id, user_id, student_number,
-                    users:user_id (name)
-                `)
+                .from('task_boxes')
+                .select('id, task_name')
                 .eq('class_id', selectedClass.id)
-                .order('student_number', { ascending: true })
+                .order('created_at', { ascending: true })
 
-            // @ts-ignore
-            setStudents(data || [])
+            setTaskBoxes(data || [])
+            if (data && data.length > 0) {
+                setSelectedTaskBoxId(data[0].id)
+            }
         } catch (error) {
-            console.error('Error fetching students:', error)
+            console.error('Error fetching task boxes:', error)
         }
     }
 
-    const fetchStudentWorks = async (studentId: string) => {
+    const fetchWorksByTaskBox = async (taskBoxId: string) => {
         setLoadingWorks(true)
         try {
-            const { data } = await supabase
+            // Need to join class_members to get user_id, then users to get name?
+            // Wait, works table usually has student_id (which is user_id) directly or class_member_id?
+            // Checked supabase.ts: Work has student_id (string). 
+            // We need to get the user name.
+            // works -> student_id (user_id) -> users (name)
+
+            const { data, error } = await supabase
                 .from('works')
-                .select(`*, task_boxes(task_name)`)
-                .eq('student_id', studentId)
+                .select(`
+                    *,
+                    users:student_id (name)
+                `)
+                .eq('task_box_id', taskBoxId)
                 .order('created_at', { ascending: false })
 
-            setStudentWorks(data || [])
+            if (error) throw error
+            // @ts-ignore
+            setUnitWorks(data || [])
         } catch (error) {
             console.error('Error fetching works:', error)
         } finally {
@@ -264,7 +276,7 @@ export default function TeacherSharePage() {
                         </button>
 
                         {showClassDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10">
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10 max-h-60 overflow-y-auto">
                                 {classes.map(cls => (
                                     <button
                                         key={cls.id}
@@ -272,7 +284,7 @@ export default function TeacherSharePage() {
                                             setSelectedClass(cls)
                                             setShowClassDropdown(false)
                                         }}
-                                        className="w-full px-4 py-3 text-left hover:bg-slate-50 text-slate-700"
+                                        className="w-full px-4 py-3 text-left hover:bg-slate-50 text-slate-700 block"
                                     >
                                         {cls.name}
                                     </button>
@@ -302,9 +314,10 @@ export default function TeacherSharePage() {
 
                         <button
                             onClick={() => {
-                                setSelectedStudentId(null)
-                                setStudentWorks([])
                                 setIsWorkSelectorOpen(true)
+                                if (selectedClass && taskBoxes.length === 0) {
+                                    fetchTaskBoxes()
+                                }
                             }}
                             className="menu-card"
                         >
@@ -420,73 +433,84 @@ export default function TeacherSharePage() {
             {/* Work Selection Modal */}
             {isWorkSelectorOpen && (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="font-bold text-lg text-slate-900">作品を選択</h3>
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-900">作品を選択</h3>
+                                <p className="text-xs text-slate-500">クラス: {selectedClass?.name}</p>
+                            </div>
                             <button onClick={() => setIsWorkSelectorOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
                                 <X className="w-6 h-6 text-slate-500" />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-                            {/* Student List */}
-                            <div className="md:w-1/3 border-r border-slate-100 overflow-y-auto max-h-[30vh] md:max-h-full">
-                                <div className="p-2 space-y-1">
-                                    {students.map(student => (
-                                        <button
-                                            key={student.id}
-                                            onClick={() => setSelectedStudentId(student.user_id)}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition ${selectedStudentId === student.user_id
-                                                ? 'bg-[#5b5fff] text-white'
-                                                : 'text-slate-700 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${selectedStudentId === student.user_id ? 'bg-white/20' : 'bg-slate-100'
-                                                }`}>
-                                                {student.student_number}
+                            {/* Left Sidebar: Task Boxes (Units) */}
+                            <div className="md:w-1/4 border-r border-slate-100 overflow-y-auto bg-slate-50">
+                                <div className="p-3">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">
+                                        単元 (Task Box)
+                                    </p>
+                                    <div className="space-y-1">
+                                        {taskBoxes.map(box => (
+                                            <button
+                                                key={box.id}
+                                                onClick={() => setSelectedTaskBoxId(box.id)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${selectedTaskBoxId === box.id
+                                                    ? 'bg-white shadow text-[#5b5fff] font-bold'
+                                                    : 'text-slate-600 hover:bg-white/50'
+                                                    }`}
+                                            >
+                                                <span className="truncate">{box.task_name}</span>
+                                                {selectedTaskBoxId === box.id && (
+                                                    <div className="w-2 h-2 rounded-full bg-[#5b5fff]" />
+                                                )}
+                                            </button>
+                                        ))}
+                                        {taskBoxes.length === 0 && (
+                                            <div className="px-3 py-4 text-center text-xs text-slate-400">
+                                                単元がありません
                                             </div>
-                                            <span className="truncate">{student.users?.name || 'Unknown'}</span>
-                                        </button>
-                                    ))}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Works Grid */}
-                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
-                                {!selectedStudentId ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                        <User className="w-12 h-12 mb-2 opacity-50" />
-                                        <p>生徒を選択してください</p>
-                                    </div>
-                                ) : loadingWorks ? (
+                            {/* Main Content: Works Grid */}
+                            <div className="flex-1 overflow-y-auto p-4 bg-white">
+                                {loadingWorks ? (
                                     <div className="h-full flex items-center justify-center">
                                         <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
                                     </div>
-                                ) : studentWorks.length === 0 ? (
-                                    <div className="h-full flex items-center justify-center text-slate-400">
-                                        <p>提出された作品がありません</p>
+                                ) : unitWorks.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                        <Image className="w-12 h-12 mb-2 opacity-20" />
+                                        <p>この単元の作品はまだありません</p>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {studentWorks.map(work => {
-                                            const workTitle = `${work.task_boxes?.task_name || '課題'} - ${new Date(work.created_at).toLocaleDateString()}`
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                        {unitWorks.map(work => {
+                                            const taskName = taskBoxes.find(t => t.id === selectedTaskBoxId)?.task_name || '課題'
+                                            const workTitle = `${taskName} - ${work.users?.name || 'Unknown'}`
+
                                             return (
                                                 <button
                                                     key={work.id}
                                                     onClick={() => handleSelectWork(work, workTitle)}
-                                                    className="bg-white p-2 rounded-xl shadow-sm hover:shadow-md transition text-left group"
+                                                    className="bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-[#5b5fff] hover:shadow-md transition text-left group"
                                                 >
-                                                    <div className="aspect-square bg-slate-100 rounded-lg mb-2 overflow-hidden">
+                                                    <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden relative">
                                                         <img
                                                             src={work.image_url}
                                                             alt="Work"
                                                             className="w-full h-full object-cover group-hover:scale-105 transition"
                                                         />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition" />
                                                     </div>
-                                                    <p className="text-xs font-bold text-slate-700 truncate">
-                                                        {work.task_boxes?.task_name || '課題'}
+                                                    <p className="text-xs font-bold text-slate-900 truncate">
+                                                        {work.users?.name || 'Unknown'}
                                                     </p>
-                                                    <p className="text-[10px] text-slate-400">
+                                                    <p className="text-[10px] text-slate-500 truncate">
                                                         {new Date(work.created_at).toLocaleDateString()}
                                                     </p>
                                                 </button>
@@ -499,10 +523,6 @@ export default function TeacherSharePage() {
                     </div>
                 </div>
             )}
-
-            <p className="text-center text-slate-400 text-xs uppercase tracking-widest mt-16">
-                ACADEMIC SHARE SYSTEM
-            </p>
         </div>
     )
 }
