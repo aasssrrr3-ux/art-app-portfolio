@@ -55,6 +55,13 @@ export default function TeacherClassDetailPage() {
         if (user && classId) {
             fetchAllData()
         }
+
+        // Safety timeout to prevent infinite loading
+        const timer = setTimeout(() => {
+            setIsDataLoading(false)
+        }, 10000)
+
+        return () => clearTimeout(timer)
     }, [user, classId])
 
     const fetchAllData = async () => {
