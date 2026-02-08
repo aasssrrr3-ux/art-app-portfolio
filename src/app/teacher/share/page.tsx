@@ -3,9 +3,20 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase, Class } from '@/lib/supabase'
-import { ChevronLeft, Camera, Image, Upload, ChevronDown, Send } from 'lucide-react'
+import { supabase, Class, Work } from '@/lib/supabase'
+import { ChevronLeft, Camera, Image, Upload, ChevronDown, Send, X, User } from 'lucide-react'
 import Link from 'next/link'
+
+interface ClassMemberWithUser {
+    id: string
+    user_id: string
+    student_number: number
+    users?: { name: string }
+}
+
+interface WorkWithTask extends Work {
+    task_boxes?: { task_name: string }
+}
 
 export default function TeacherSharePage() {
     const router = useRouter()
@@ -24,6 +35,13 @@ export default function TeacherSharePage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [stream, setStream] = useState<MediaStream | null>(null)
 
+    // Work Selection State
+    const [isWorkSelectorOpen, setIsWorkSelectorOpen] = useState(false)
+    const [students, setStudents] = useState<ClassMemberWithUser[]>([])
+    const [studentWorks, setStudentWorks] = useState<WorkWithTask[]>([])
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+    const [loadingWorks, setLoadingWorks] = useState(false)
+
     useEffect(() => {
         if (!loading && !user) {
             router.push('/login?role=teacher')
@@ -35,6 +53,18 @@ export default function TeacherSharePage() {
             fetchClasses()
         }
     }, [user])
+
+    useEffect(() => {
+        if (selectedClass) {
+            fetchStudents()
+        }
+    }, [selectedClass])
+
+    useEffect(() => {
+        if (selectedStudentId) {
+            fetchStudentWorks(selectedStudentId)
+        }
+    }, [selectedStudentId])
 
     useEffect(() => {
         if (mode === 'camera') {
@@ -57,6 +87,42 @@ export default function TeacherSharePage() {
             setClasses(data || [])
         } catch (error) {
             console.error('Error fetching classes:', error)
+        }
+    }
+
+    const fetchStudents = async () => {
+        if (!selectedClass) return
+        try {
+            const { data } = await supabase
+                .from('class_members')
+                .select(`
+                    id, user_id, student_number,
+                    users:user_id (name)
+                `)
+                .eq('class_id', selectedClass.id)
+                .order('student_number', { ascending: true })
+
+            // @ts-ignore
+            setStudents(data || [])
+        } catch (error) {
+            console.error('Error fetching students:', error)
+        }
+    }
+
+    const fetchStudentWorks = async (studentId: string) => {
+        setLoadingWorks(true)
+        try {
+            const { data } = await supabase
+                .from('works')
+                .select(`*, task_boxes(task_name)`)
+                .eq('student_id', studentId)
+                .order('created_at', { ascending: false })
+
+            setStudentWorks(data || [])
+        } catch (error) {
+            console.error('Error fetching works:', error)
+        } finally {
+            setLoadingWorks(false)
         }
     }
 
@@ -105,24 +171,37 @@ export default function TeacherSharePage() {
         }
     }
 
+    const handleSelectWork = (work: Work, workTitle: string) => {
+        setCapturedImage(work.image_url)
+        setTitle(workTitle) // Auto-fill title
+        setIsWorkSelectorOpen(false)
+        setMode('preview')
+    }
+
     const handleSubmit = async () => {
         if (!capturedImage || !selectedClass || !title.trim() || !user) return
 
         setIsSubmitting(true)
         try {
-            const response = await fetch(capturedImage)
-            const blob = await response.blob()
-            const fileName = `${user.id}/${selectedClass.id}/${Date.now()}.jpg`
+            // Check if capturedImage is already a URL (from existing work) or base64 (new upload)
+            let publicUrl = capturedImage
 
-            const { error: uploadError } = await supabase.storage
-                .from('resources')
-                .upload(fileName, blob, { contentType: 'image/jpeg' })
+            if (capturedImage.startsWith('data:')) {
+                const response = await fetch(capturedImage)
+                const blob = await response.blob()
+                const fileName = `${user.id}/${selectedClass.id}/${Date.now()}.jpg`
 
-            if (uploadError) throw uploadError
+                const { error: uploadError } = await supabase.storage
+                    .from('resources')
+                    .upload(fileName, blob, { contentType: 'image/jpeg' })
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('resources')
-                .getPublicUrl(fileName)
+                if (uploadError) throw uploadError
+
+                const { data } = supabase.storage
+                    .from('resources')
+                    .getPublicUrl(fileName)
+                publicUrl = data.publicUrl
+            }
 
             await supabase
                 .from('shared_resources')
@@ -162,7 +241,7 @@ export default function TeacherSharePage() {
                 </Link>
                 <div>
                     <p className="page-subtitle">SHARE RESOURCES</p>
-                    <h1 className="page-title">SHARING WITH STUDENTS</h1>
+                    <h1 className="page-title">資料共有</h1>
                 </div>
             </div>
 
@@ -170,7 +249,7 @@ export default function TeacherSharePage() {
                 {/* Class Selector */}
                 <div className="card-soft-sm p-4 mb-6">
                     <p className="text-xs text-[#5b5fff] uppercase tracking-wider font-semibold mb-3">
-                        STEP 1: SELECT TARGET CLASS
+                        STEP 1: クラスを選択
                     </p>
 
                     <div className="relative">
@@ -222,7 +301,11 @@ export default function TeacherSharePage() {
                         </button>
 
                         <button
-                            onClick={() => alert('作品からの共有機能は開発中です')}
+                            onClick={() => {
+                                setSelectedStudentId(null)
+                                setStudentWorks([])
+                                setIsWorkSelectorOpen(true)
+                            }}
                             className="menu-card"
                         >
                             <Image className="w-8 h-8 text-[#5b5fff] mb-3" />
@@ -333,6 +416,89 @@ export default function TeacherSharePage() {
                     className="hidden"
                 />
             </div>
+
+            {/* Work Selection Modal */}
+            {isWorkSelectorOpen && (
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="font-bold text-lg text-slate-900">作品を選択</h3>
+                            <button onClick={() => setIsWorkSelectorOpen(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                                <X className="w-6 h-6 text-slate-500" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            {/* Student List */}
+                            <div className="md:w-1/3 border-r border-slate-100 overflow-y-auto max-h-[30vh] md:max-h-full">
+                                <div className="p-2 space-y-1">
+                                    {students.map(student => (
+                                        <button
+                                            key={student.id}
+                                            onClick={() => setSelectedStudentId(student.user_id)}
+                                            className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition ${selectedStudentId === student.user_id
+                                                ? 'bg-[#5b5fff] text-white'
+                                                : 'text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${selectedStudentId === student.user_id ? 'bg-white/20' : 'bg-slate-100'
+                                                }`}>
+                                                {student.student_number}
+                                            </div>
+                                            <span className="truncate">{student.users?.name || 'Unknown'}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Works Grid */}
+                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+                                {!selectedStudentId ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                                        <User className="w-12 h-12 mb-2 opacity-50" />
+                                        <p>生徒を選択してください</p>
+                                    </div>
+                                ) : loadingWorks ? (
+                                    <div className="h-full flex items-center justify-center">
+                                        <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                                    </div>
+                                ) : studentWorks.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center text-slate-400">
+                                        <p>提出された作品がありません</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {studentWorks.map(work => {
+                                            const workTitle = `${work.task_boxes?.task_name || '課題'} - ${new Date(work.created_at).toLocaleDateString()}`
+                                            return (
+                                                <button
+                                                    key={work.id}
+                                                    onClick={() => handleSelectWork(work, workTitle)}
+                                                    className="bg-white p-2 rounded-xl shadow-sm hover:shadow-md transition text-left group"
+                                                >
+                                                    <div className="aspect-square bg-slate-100 rounded-lg mb-2 overflow-hidden">
+                                                        <img
+                                                            src={work.image_url}
+                                                            alt="Work"
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition"
+                                                        />
+                                                    </div>
+                                                    <p className="text-xs font-bold text-slate-700 truncate">
+                                                        {work.task_boxes?.task_name || '課題'}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">
+                                                        {new Date(work.created_at).toLocaleDateString()}
+                                                    </p>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <p className="text-center text-slate-400 text-xs uppercase tracking-widest mt-16">
                 ACADEMIC SHARE SYSTEM

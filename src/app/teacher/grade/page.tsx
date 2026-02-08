@@ -349,8 +349,8 @@ export default function TeacherGradePage() {
                         <ChevronLeft className="w-6 h-6 text-slate-600" />
                     </Link>
                     <div>
-                        <p className="page-subtitle">GRADE VIEW</p>
-                        <h1 className="page-title">SELECT CLASS</h1>
+                        <p className="page-subtitle">提出状況確認</p>
+                        <h1 className="page-title">クラス選択</h1>
                     </div>
                 </div>
 
@@ -393,7 +393,7 @@ export default function TeacherGradePage() {
                     <ChevronLeft className="w-6 h-6 text-slate-600" />
                 </button>
                 <div className="flex-1">
-                    <p className="page-subtitle">GRADE VIEW</p>
+                    <p className="page-subtitle">提出状況確認</p>
                     <h1 className="page-title">{selectedClass?.name}</h1>
                 </div>
 
@@ -689,10 +689,11 @@ export default function TeacherGradePage() {
                                 <div className="flex flex-wrap gap-2">
                                     {selectedWork.reactions.map((reaction, i) => {
                                         const reactionLabels: Record<string, string> = {
-                                            'awesome': '素晴らしい！',
-                                            'great': 'すごいね',
-                                            'good': 'いいね',
-                                            'smile': '面白い！'
+                                            'star': '素敵',
+                                            'clap': '拍手',
+                                            'smile': '応援',
+                                            'fire': 'すごい',
+                                            'like': 'いいね'
                                         }
                                         const label = reactionLabels[reaction.reaction_type] || reaction.reaction_type
 

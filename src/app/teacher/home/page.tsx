@@ -96,7 +96,7 @@ export default function TeacherHomePage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <p className="page-subtitle">TEACHER DASHBOARD</p>
+                    <p className="page-subtitle">先生用ダッシュボード</p>
                     <h1 className="text-2xl font-bold text-slate-900">
                         {user?.name || '先生'}
                     </h1>
@@ -140,7 +140,7 @@ export default function TeacherHomePage() {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-900">{cls.name}</p>
-                                                <p className="text-xs text-slate-400">CODE: {cls.code}</p>
+                                                <p className="text-xs text-slate-400">コード: {cls.code}</p>
                                             </div>
                                         </div>
                                         <ChevronRight className="w-5 h-5 text-slate-400" />
@@ -161,7 +161,7 @@ export default function TeacherHomePage() {
                                 <FolderPlus className="w-6 h-6 text-white" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">CHECK BOX</h3>
+                                <h3 className="font-bold text-slate-900">課題設定</h3>
                                 <p className="text-xs text-slate-500">課題箱の作成・管理</p>
                             </div>
                         </div>
@@ -173,7 +173,7 @@ export default function TeacherHomePage() {
                                 <Share2 className="w-6 h-6 text-white" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">SHARE RESOURCES</h3>
+                                <h3 className="font-bold text-slate-900">資料共有</h3>
                                 <p className="text-xs text-slate-500">生徒への資料共有</p>
                             </div>
                         </div>
@@ -185,8 +185,8 @@ export default function TeacherHomePage() {
                                 <ClipboardList className="w-6 h-6 text-white" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">GRADE VIEW</h3>
-                                <p className="text-xs text-slate-500">提出状況の確認</p>
+                                <h3 className="font-bold text-slate-900">提出状況</h3>
+                                <p className="text-xs text-slate-500">提出状況の確認・評価</p>
                             </div>
                         </div>
                     </Link>
