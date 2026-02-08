@@ -32,6 +32,7 @@ export default function TeacherClassDetailPage() {
 
     const [classInfo, setClassInfo] = useState<Class | null>(null)
     const [members, setMembers] = useState<ClassMemberWithUser[]>([])
+    const [isDataLoading, setIsDataLoading] = useState(true)
     const [showImportModal, setShowImportModal] = useState(false)
     const [parsedStudents, setParsedStudents] = useState<StudentData[]>([])
     const [isImporting, setIsImporting] = useState(false)
@@ -52,10 +53,23 @@ export default function TeacherClassDetailPage() {
 
     useEffect(() => {
         if (user && classId) {
-            fetchClassInfo()
-            fetchMembers()
+            fetchAllData()
         }
     }, [user, classId])
+
+    const fetchAllData = async () => {
+        setIsDataLoading(true)
+        try {
+            await Promise.all([
+                fetchClassInfo(),
+                fetchMembers()
+            ])
+        } catch (error) {
+            console.error('Error fetching data:', error)
+        } finally {
+            setIsDataLoading(false)
+        }
+    }
 
     const fetchClassInfo = async () => {
         try {
@@ -262,7 +276,7 @@ export default function TeacherClassDetailPage() {
         }
     }
 
-    if (loading) {
+    if (loading || isDataLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />

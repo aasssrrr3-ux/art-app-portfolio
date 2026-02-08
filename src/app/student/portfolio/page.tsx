@@ -20,6 +20,7 @@ export default function StudentPortfolioPage() {
     const { user, loading } = useAuth()
     const [works, setWorks] = useState<WorkWithTaskBox[]>([])
     const [groupedWorks, setGroupedWorks] = useState<Record<string, WorkWithTaskBox[]>>({})
+    const [isDataLoading, setIsDataLoading] = useState(true)
     const [selectedWork, setSelectedWork] = useState<WorkWithTaskBox | null>(null)
     const [showAnnotation, setShowAnnotation] = useState(false)
     const [annotationCount, setAnnotationCount] = useState(0)
@@ -116,6 +117,7 @@ export default function StudentPortfolioPage() {
     }
 
     const fetchMyWorks = async () => {
+        setIsDataLoading(true)
         try {
             const { data } = await supabase
                 .from('works')
@@ -143,6 +145,8 @@ export default function StudentPortfolioPage() {
             }
         } catch (error) {
             console.error('Error fetching works:', error)
+        } finally {
+            setIsDataLoading(false)
         }
     }
 
@@ -183,7 +187,7 @@ export default function StudentPortfolioPage() {
         setAnnotationCount(count || 0)
     }
 
-    if (loading) {
+    if (loading || isDataLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
