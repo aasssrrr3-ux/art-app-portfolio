@@ -21,6 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // Start a fallback timer to force loading to false if Supabase hangs
+        const timer = setTimeout(() => {
+            console.warn('[Auth] Loading took too long, forcing completion')
+            setLoading(false)
+        }, 5000) // 5 seconds timeout
+
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session)
@@ -29,11 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 setLoading(false)
             }
+        }).catch(err => {
+            console.error('[Auth] Initial session error:', err)
+            setLoading(false)
         })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
+                console.log('[Auth] Auth state changed:', event, session?.user?.email)
                 setSession(session)
                 if (session?.user) {
                     await fetchUser(session.user.id)
@@ -44,7 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         )
 
-        return () => subscription.unsubscribe()
+        return () => {
+            clearTimeout(timer)
+            subscription.unsubscribe()
+        }
     }, [])
 
     const fetchUser = async (userId: string) => {
