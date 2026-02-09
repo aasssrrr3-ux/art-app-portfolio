@@ -219,8 +219,9 @@ function LoginForm() {
                                 </>
                             ) : (
                                 <>
-                                    Email: <code className="bg-slate-200 px-1 rounded">student01@example.com</code><br />
-                                    Pass: <code className="bg-slate-200 px-1 rounded">student123</code>
+                                    Email: <code className="bg-slate-200 px-1 rounded font-mono">student01@example.com</code><br />
+                                    Pass: <code className="bg-slate-200 px-1 rounded font-mono">student123</code>
+                                    <p className="mt-1 text-slate-400">※デバッグ用アカウントです</p>
                                 </>
                             )}
                         </p>

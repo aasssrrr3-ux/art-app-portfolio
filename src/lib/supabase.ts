@@ -3,6 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+if (typeof window !== 'undefined') {
+  console.log('[Supabase] Initializing client', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    urlPrefix: supabaseUrl ? supabaseUrl.substring(0, 8) : 'N/A'
+  })
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Database types
