@@ -21,57 +21,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Start a fallback timer to force loading to false if Supabase hangs
-        // Start a fallback timer to force loading to false if Supabase hangs
-        const timer = setTimeout(async () => {
-            console.warn('[Auth] Loading took too long, forcing logic')
-
-            // Try to recover from session if available
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.user?.user_metadata?.role) {
-                console.warn('[Auth] Recovering user from session metadata due to timeout')
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email || '',
-                    name: session.user.user_metadata.name || 'Unknown',
-                    role: session.user.user_metadata.role,
-                    created_at: session.user.created_at
-                })
-            }
-
-            setLoading(false)
-        }, 5000) // 5 seconds timeout
-
         // Get initial session
-        console.log('[Auth] Calling supabase.auth.getSession()...')
+        // This is the source of truth for the initial loading state
         supabase.auth.getSession().then(({ data: { session } }) => {
-            console.log('[Auth] getSession finished', { hasSession: !!session })
-            clearTimeout(timer)
             setSession(session)
             if (session?.user) {
+                // If we have a session, we must fetch the user details
                 fetchUser(session.user.id, session)
             } else {
+                // Truly no session, stop loading
+                console.log('[Auth] No session found, stopping loading')
                 setLoading(false)
             }
         }).catch(err => {
-            clearTimeout(timer)
-            // Ignore AbortError which can happen on fast navigations/strict mode
-            if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-                console.warn('[Auth] Session fetch aborted')
-            } else {
-                console.error('[Auth] Initial session error:', err)
-            }
+            console.error('[Auth] Initial session error:', err)
             setLoading(false)
         })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log('[Auth] Auth state changed:', event, session?.user?.email)
+                console.log(`[Auth] Auth state changed: ${event}`)
                 setSession(session)
+
+                // SPECIAL HANDLING:
+                // 'INITIAL_SESSION' is fired immediately by Supabase client.
+                // We MUST ignore it for 'loading' state because getSession() above is handling the initial check.
+                // If we set loading=false here when session is null (which it is for INITIAL_SESSION often),
+                // we race with getSession() and cause premature redirects.
+                if (event === 'INITIAL_SESSION') {
+                    return
+                }
+
                 if (session?.user) {
                     await fetchUser(session.user.id, session)
-                } else {
+                } else if (event === 'SIGNED_OUT') {
                     setUser(null)
                     setLoading(false)
                 }
@@ -79,40 +63,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         )
 
         return () => {
-            clearTimeout(timer)
             subscription.unsubscribe()
         }
     }, [])
 
     const fetchUser = async (userId: string, existingSession?: Session | null) => {
-        console.log('[Auth] Fetching user:', userId)
-
         // 1. Optimistic Update from Session Metadata (Immediate)
         try {
-            // Use provided session OR fetch if not provided
             let currentSession = existingSession
             if (!currentSession) {
                 const { data } = await supabase.auth.getSession()
                 currentSession = data.session
             }
 
-            if (currentSession?.user && currentSession.user.id === userId) {
+            if (currentSession?.user && currentSession.user.user_metadata?.role) {
                 const metadata = currentSession.user.user_metadata
-                if (metadata && metadata.role) {
-                    const optimisticUser = {
-                        id: currentSession.user.id,
-                        email: currentSession.user.email || '',
-                        name: metadata.name || 'Unknown',
-                        role: metadata.role,
-                        created_at: currentSession.user.created_at
-                    }
-                    console.log('[Auth] Optimistically setting user from metadata')
-                    setUser(optimisticUser)
-                    setLoading(false)
-                }
+                setUser({
+                    id: currentSession.user.id,
+                    email: currentSession.user.email || '',
+                    name: metadata.name || 'Unknown',
+                    role: metadata.role,
+                    created_at: currentSession.user.created_at
+                })
+                // We can't set loading=false here comfortably because we still want to fetch fresh data,
+                // BUT if we want UI to be snappy, we could. 
+                // However, let's wait for DB to be sure unless we want Stale-While-Revalidate.
+                // For now, let's actually allow optimistic rendering if we have data.
             }
         } catch (e) {
-            console.error('[Auth] Error getting session for optimistic update:', e)
+            console.error('[Auth] Optimistic update error:', e)
         }
 
         // 2. Fetch from DB to get latest data (async)
@@ -124,16 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .single()
 
             if (!error && data) {
-                console.log('[Auth] Loaded fresh user data from DB')
                 setUser(data)
             } else if (error) {
-                console.warn('[Auth] DB fetch failed, keeping metadata user:', error.message)
+                console.warn('[Auth] DB fetch failed:', error.message)
             }
 
         } catch (error: any) {
             console.error('[Auth] Error in fetchUser DB call:', error)
         } finally {
-            console.log('[Auth] Fetch process finished')
             setLoading(false)
         }
     }
