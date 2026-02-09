@@ -13,10 +13,6 @@ export default function StudentHomePage() {
     const [classes, setClasses] = useState<Class[]>([])
     const [selectedClass, setSelectedClass] = useState<Class | null>(null)
     const [showDropdown, setShowDropdown] = useState(false)
-    const [showJoinModal, setShowJoinModal] = useState(false)
-    const [classCode, setClassCode] = useState('')
-    const [isJoining, setIsJoining] = useState(false)
-    const [joinError, setJoinError] = useState('')
     const [isFetchingClasses, setIsFetchingClasses] = useState(true) // Start true
 
     useEffect(() => {
@@ -70,57 +66,7 @@ export default function StudentHomePage() {
         }
     }
 
-    const handleJoinClass = async () => {
-        if (!classCode.trim() || !user) return
 
-        setIsJoining(true)
-        setJoinError('')
-
-        try {
-            // クラスコードでクラスを検索
-            const { data: classData, error: classError } = await supabase
-                .from('classes')
-                .select('*')
-                .eq('code', classCode.trim().toUpperCase())
-                .single()
-
-            if (classError || !classData) {
-                throw new Error('クラスが見つかりません。コードを確認してください。')
-            }
-
-            // 既に参加しているか確認
-            const { data: existing } = await supabase
-                .from('class_members')
-                .select('id')
-                .eq('class_id', classData.id)
-                .eq('user_id', user.id)
-                .single()
-
-            if (existing) {
-                throw new Error('すでにこのクラスに参加しています。')
-            }
-
-            // クラスに参加
-            const { error: joinError } = await supabase
-                .from('class_members')
-                .insert({
-                    class_id: classData.id,
-                    user_id: user.id,
-                    student_number: null
-                })
-
-            if (joinError) throw joinError
-
-            // 成功
-            setShowJoinModal(false)
-            setClassCode('')
-            fetchClasses()
-        } catch (error: any) {
-            setJoinError(error.message || 'クラス参加に失敗しました')
-        } finally {
-            setIsJoining(false)
-        }
-    }
 
     const handleSignOut = async () => {
         await signOut()
@@ -158,10 +104,10 @@ export default function StudentHomePage() {
                     {/* Class Dropdown */}
                     <div className="relative">
                         <button
-                            onClick={() => classes.length > 0 ? setShowDropdown(!showDropdown) : setShowJoinModal(true)}
+                            onClick={() => setShowDropdown(!showDropdown)}
                             className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                         >
-                            <span>{selectedClass?.name || 'クラスに参加'}</span>
+                            <span>{selectedClass?.name || 'クラス未所属'}</span>
                             <ChevronDown className="w-4 h-4" />
                         </button>
 
@@ -179,16 +125,6 @@ export default function StudentHomePage() {
                                         {cls.name}
                                     </button>
                                 ))}
-                                <button
-                                    onClick={() => {
-                                        setShowDropdown(false)
-                                        setShowJoinModal(true)
-                                    }}
-                                    className="w-full px-4 py-3 text-left text-[#5b5fff] hover:bg-slate-50 border-t flex items-center gap-2"
-                                >
-                                    <UserPlus className="w-4 h-4" />
-                                    新しいクラスに参加
-                                </button>
                             </div>
                         )}
                     </div>
@@ -202,14 +138,8 @@ export default function StudentHomePage() {
                     <div className="w-20 h-20 rounded-full bg-[#5b5fff]/10 flex items-center justify-center mx-auto mb-6">
                         <UserPlus className="w-10 h-10 text-[#5b5fff]" />
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-2">クラスに参加しましょう</h2>
-                    <p className="text-slate-500 mb-6">先生から共有されたクラスコードを入力してください</p>
-                    <button
-                        onClick={() => setShowJoinModal(true)}
-                        className="btn-primary"
-                    >
-                        クラスコードを入力
-                    </button>
+                    <h2 className="text-xl font-bold text-slate-900 mb-2">クラスに所属していません</h2>
+                    <p className="text-slate-500 mb-6">先生にクラスへの招待を依頼してください</p>
                 </div>
             ) : (
                 /* Main Menu */
@@ -248,55 +178,7 @@ export default function StudentHomePage() {
                 ART EDUCATION SYSTEM V1.0
             </p>
 
-            {/* Join Class Modal */}
-            {showJoinModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-3xl p-8 w-full max-w-md">
-                        <h2 className="text-xl font-bold text-slate-900 mb-2">クラスに参加</h2>
-                        <p className="text-slate-500 mb-6">先生から共有されたクラスコードを入力してください</p>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                クラスコード
-                            </label>
-                            <input
-                                type="text"
-                                value={classCode}
-                                onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                                className="input-field text-center text-2xl font-mono tracking-widest"
-                                placeholder="XXXXXX"
-                                maxLength={10}
-                            />
-                        </div>
-
-                        {joinError && (
-                            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm mb-4">
-                                {joinError}
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setShowJoinModal(false)
-                                    setClassCode('')
-                                    setJoinError('')
-                                }}
-                                className="btn-secondary flex-1"
-                            >
-                                キャンセル
-                            </button>
-                            <button
-                                onClick={handleJoinClass}
-                                disabled={isJoining || !classCode.trim()}
-                                className="btn-primary flex-1"
-                            >
-                                {isJoining ? '参加中...' : '参加する'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

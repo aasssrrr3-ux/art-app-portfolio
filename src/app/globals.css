@@ -23,6 +23,8 @@
 .theme-student {
   --primary: #5b5fff;
   --primary-dark: #4b4fe0;
+  --background: #eef2ff;
+  /* Indigo-50 */
 }
 
 .theme-teacher {
@@ -30,6 +32,8 @@
   /* Teal-600 */
   --primary-dark: #0f766e;
   /* Teal-700 */
+  --background: #f0fdf4;
+  /* Teal-50 */
 }
 
 

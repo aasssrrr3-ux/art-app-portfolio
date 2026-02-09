@@ -23,6 +23,13 @@ interface StudentData {
     number: number
 }
 
+interface CreatedUser {
+    name: string
+    email: string
+    password: string
+    number: number
+}
+
 export default function TeacherClassDetailPage() {
     const router = useRouter()
     const params = useParams()
@@ -39,6 +46,8 @@ export default function TeacherClassDetailPage() {
     const [importError, setImportError] = useState('')
     const [codeCopied, setCodeCopied] = useState(false)
     const [fileName, setFileName] = useState('')
+    const [createdUsers, setCreatedUsers] = useState<CreatedUser[]>([])
+    const [showCredentialsModal, setShowCredentialsModal] = useState(false)
 
     // Admin State
     const [managingMember, setManagingMember] = useState<ClassMemberWithUser | null>(null)
@@ -212,7 +221,13 @@ export default function TeacherClassDetailPage() {
                 setParsedStudents([])
                 setFileName('')
                 fetchMembers()
-                alert(`${result.successCount}名の生徒を登録しました${result.errorCount > 0 ? `（${result.errorCount}名失敗）` : ''}\n\nデフォルトパスワード: student123`)
+
+                if (result.createdUsers && result.createdUsers.length > 0) {
+                    setCreatedUsers(result.createdUsers)
+                    setShowCredentialsModal(true)
+                } else {
+                    alert(`${result.successCount}名の生徒を登録しました${result.errorCount > 0 ? `（${result.errorCount}名失敗）` : ''}`)
+                }
             } else {
                 setImportError(`登録に失敗しました。${result.errors?.[0] || ''}`)
             }
@@ -566,6 +581,69 @@ export default function TeacherClassDetailPage() {
                                 className="btn-primary flex-1"
                             >
                                 {isImporting ? '登録中...' : `${parsedStudents.length}名を登録`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Credentials Modal */}
+            {showCredentialsModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[80] p-4">
+                    <div className="bg-white rounded-3xl p-8 w-full max-w-2xl max-h-[90vh] overflow-auto">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Check className="w-8 h-8 text-green-600" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900">生徒アカウントを作成しました</h2>
+                            <p className="text-slate-500 mt-2">
+                                以下のログイン情報を生徒に配布してください。<br />
+                                <span className="text-red-500 font-bold">この画面を閉じるとパスワードは二度と表示されません。</span>
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mb-6">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-100 border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">No.</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">氏名</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">メールアドレス</th>
+                                        <th className="px-4 py-3 font-semibold text-slate-700">初期パスワード</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {createdUsers.map((user, i) => (
+                                        <tr key={i} className="bg-white">
+                                            <td className="px-4 py-3 text-slate-600">{user.number}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-900">{user.name}</td>
+                                            <td className="px-4 py-3 text-slate-600">{user.email}</td>
+                                            <td className="px-4 py-3 font-mono font-bold text-primary text-lg">{user.password}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => {
+                                    window.print()
+                                }}
+                                className="btn-secondary flex items-center gap-2"
+                            >
+                                <Copy className="w-5 h-5" />
+                                印刷 / PDF保存
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirm('パスワードを保存しましたか？この画面を閉じると再表示できません。')) {
+                                        setShowCredentialsModal(false)
+                                        setCreatedUsers([])
+                                    }
+                                }}
+                                className="btn-primary"
+                            >
+                                閉じる
                             </button>
                         </div>
                     </div>

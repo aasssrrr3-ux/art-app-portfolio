@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
         let errorCount = 0
         const errors: string[] = []
 
+        const createdUsers: { name: string; email: string; password: string; number: number }[] = []
+
         for (const student of students) {
             try {
                 // Check if user already exists in public.users
@@ -44,14 +46,22 @@ export async function POST(request: NextRequest) {
                     .single()
 
                 let userId: string
+                let password = 'ExistingUser' // Placeholder for existing users
 
                 if (existingUser) {
                     userId = existingUser.id
+                    // Cannot retrieve password for existing user
                 } else {
+                    // Generate random 6-char password
+                    const chars = 'abcdefghijkmnpqrstuvwxyz23456789' // Removed confusing chars like l, 1, o, 0
+                    password = Array.from(crypto.getRandomValues(new Uint8Array(6)))
+                        .map(b => chars[b % chars.length])
+                        .join('')
+
                     // Create new auth user with admin API
                     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
                         email: student.email,
-                        password: 'student123',
+                        password: password,
                         email_confirm: true, // Skip email confirmation
                         user_metadata: {
                             name: student.name,
@@ -80,6 +90,14 @@ export async function POST(request: NextRequest) {
                         console.error(`Error creating profile for ${student.email}:`, profileError)
                         // Continue anyway, the auth user was created
                     }
+
+                    // Add to created list only if it's a new user
+                    createdUsers.push({
+                        name: student.name,
+                        email: student.email,
+                        password: password,
+                        number: student.number
+                    })
                 }
 
                 // Add user to class
@@ -110,7 +128,8 @@ export async function POST(request: NextRequest) {
             success: true,
             successCount,
             errorCount,
-            errors: errors.slice(0, 5) // Return first 5 errors only
+            errors: errors.slice(0, 5), // Return first 5 errors only
+            createdUsers // Return list of new users with passwords
         })
 
     } catch (error: any) {
