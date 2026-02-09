@@ -195,7 +195,7 @@ export default function TeacherTaskBoxPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -224,7 +224,7 @@ export default function TeacherTaskBoxPage() {
                 {/* Active Task Boxes */}
                 <div className="mb-8">
                     <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-[#5b5fff]" />
+                        <Clock className="w-5 h-5 text-primary" />
                         進行中 ({activeBoxes.length})
                     </h2>
 
@@ -237,8 +237,8 @@ export default function TeacherTaskBoxPage() {
                             {activeBoxes.map(box => (
                                 <div key={box.id} className="card-soft-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-[#5b5fff]/10 flex items-center justify-center flex-shrink-0">
-                                            <Calendar className="w-6 h-6 text-[#5b5fff]" />
+                                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                            <Calendar className="w-6 h-6 text-primary" />
                                         </div>
                                         <div>
                                             <p className="font-bold text-slate-900">
@@ -255,7 +255,7 @@ export default function TeacherTaskBoxPage() {
                                     <div className="flex items-center gap-2 justify-end">
                                         <button
                                             onClick={() => startEditing(box)}
-                                            className="p-2 text-slate-400 hover:text-[#5b5fff] hover:bg-[#5b5fff]/5 rounded-full transition"
+                                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full transition"
                                             title="編集"
                                         >
                                             <Edit className="w-5 h-5" />
@@ -307,14 +307,14 @@ export default function TeacherTaskBoxPage() {
                                     <div className="flex items-center gap-2 justify-end">
                                         <button
                                             onClick={() => startEditing(box)}
-                                            className="p-2 text-slate-400 hover:text-[#5b5fff] hover:bg-[#5b5fff]/5 rounded-full transition"
+                                            className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-full transition"
                                             title="編集"
                                         >
                                             <Edit className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={() => toggleActive(box)}
-                                            className="text-sm text-[#5b5fff] hover:text-[#4b4fe0] px-3 py-1.5 rounded-lg hover:bg-[#5b5fff]/5 border border-transparent hover:border-[#5b5fff]/20 transition"
+                                            className="text-sm text-primary hover:text-primary-dark px-3 py-1.5 rounded-lg hover:bg-primary/5 border border-transparent hover:border-primary/20 transition"
                                         >
                                             再開する
                                         </button>

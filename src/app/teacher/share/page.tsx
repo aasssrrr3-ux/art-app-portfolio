@@ -239,7 +239,7 @@ export default function TeacherSharePage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -260,7 +260,7 @@ export default function TeacherSharePage() {
             <div className="max-w-xl mx-auto">
                 {/* Class Selector */}
                 <div className="card-soft-sm p-4 mb-6">
-                    <p className="text-xs text-[#5b5fff] uppercase tracking-wider font-semibold mb-3">
+                    <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-3">
                         STEP 1: クラスを選択
                     </p>
 
@@ -294,7 +294,7 @@ export default function TeacherSharePage() {
                     </div>
 
                     {!selectedClass && (
-                        <p className="text-[#5b5fff] text-sm mt-3 text-center">
+                        <p className="text-primary text-sm mt-3 text-center">
                             ↑ まずはクラスを選択してください
                         </p>
                     )}
@@ -321,7 +321,7 @@ export default function TeacherSharePage() {
                             }}
                             className="menu-card"
                         >
-                            <Image className="w-8 h-8 text-[#5b5fff] mb-3" />
+                            <Image className="w-8 h-8 text-primary mb-3" />
                             <p className="font-bold text-slate-900">作品から共有</p>
                             <p className="text-xs text-slate-400 uppercase mt-1">SELECT STUDENT WORK</p>
                         </button>
@@ -330,7 +330,7 @@ export default function TeacherSharePage() {
                             onClick={() => fileInputRef.current?.click()}
                             className="menu-card"
                         >
-                            <Upload className="w-8 h-8 text-[#5b5fff] mb-3" />
+                            <Upload className="w-8 h-8 text-primary mb-3" />
                             <p className="font-bold text-slate-900">画像を共有</p>
                             <p className="text-xs text-slate-400 uppercase mt-1">UPLOAD FILE</p>
                         </button>
@@ -353,7 +353,7 @@ export default function TeacherSharePage() {
                                 onClick={capturePhoto}
                                 className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg hover:scale-105 transition"
                             >
-                                <div className="w-12 h-12 rounded-full border-4 border-[#5b5fff]" />
+                                <div className="w-12 h-12 rounded-full border-4 border-primary" />
                             </button>
 
                             <button
@@ -457,13 +457,13 @@ export default function TeacherSharePage() {
                                                 key={box.id}
                                                 onClick={() => setSelectedTaskBoxId(box.id)}
                                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${selectedTaskBoxId === box.id
-                                                    ? 'bg-white shadow text-[#5b5fff] font-bold'
+                                                    ? 'bg-white shadow text-primary font-bold'
                                                     : 'text-slate-600 hover:bg-white/50'
                                                     }`}
                                             >
                                                 <span className="truncate">{box.task_name}</span>
                                                 {selectedTaskBoxId === box.id && (
-                                                    <div className="w-2 h-2 rounded-full bg-[#5b5fff]" />
+                                                    <div className="w-2 h-2 rounded-full bg-primary" />
                                                 )}
                                             </button>
                                         ))}
@@ -480,7 +480,7 @@ export default function TeacherSharePage() {
                             <div className="flex-1 overflow-y-auto p-4 bg-white">
                                 {loadingWorks ? (
                                     <div className="h-full flex items-center justify-center">
-                                        <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                                     </div>
                                 ) : unitWorks.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-slate-400">
@@ -497,7 +497,7 @@ export default function TeacherSharePage() {
                                                 <button
                                                     key={work.id}
                                                     onClick={() => handleSelectWork(work, workTitle)}
-                                                    className="bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-[#5b5fff] hover:shadow-md transition text-left group"
+                                                    className="bg-slate-50 p-2 rounded-xl border border-slate-100 hover:border-primary hover:shadow-md transition text-left group"
                                                 >
                                                     <div className="aspect-square bg-white rounded-lg mb-2 overflow-hidden relative">
                                                         <img

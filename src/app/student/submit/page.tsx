@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, TaskBox, Class } from '@/lib/supabase'
-import { ChevronLeft, Camera, Sun, ChevronDown, Send, RefreshCw } from 'lucide-react'
+import { ChevronLeft, Camera, Sun, ChevronDown, Send, RefreshCw, Grid } from 'lucide-react'
 import Link from 'next/link'
 
 export default function StudentSubmitPage() {
@@ -27,6 +27,7 @@ export default function StudentSubmitPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [step, setStep] = useState<'camera' | 'preview' | 'success'>('camera')
     const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
+    const [showGrid, setShowGrid] = useState(false)
 
     // Past Comparison State
     const [previousWorkUrl, setPreviousWorkUrl] = useState<string | null>(null)
@@ -364,6 +365,21 @@ export default function StudentSubmitPage() {
                                 </div>
                             )}
 
+                            {/* Grid Overlay */}
+                            {showGrid && (
+                                <div className="camera-grid">
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                    <div className="camera-grid-cell" />
+                                </div>
+                            )}
+
                             {/* Overlay Controls */}
                             {previousWorkUrl && (
                                 <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
@@ -409,6 +425,15 @@ export default function StudentSubmitPage() {
                                     className="w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-lg hover:bg-white transition"
                                 >
                                     <RefreshCw className="w-6 h-6 text-slate-700" />
+                                </button>
+
+                                {/* Grid Toggle Button */}
+                                <button
+                                    onClick={() => setShowGrid(!showGrid)}
+                                    className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition ${showGrid ? 'bg-[#5b5fff] text-white' : 'bg-white/80 text-slate-700 hover:bg-white'
+                                        }`}
+                                >
+                                    <Grid className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
@@ -458,8 +483,8 @@ export default function StudentSubmitPage() {
                                     <button
                                         onClick={() => setIsCompareMode(!isCompareMode)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm ${isCompareMode
-                                                ? 'bg-[#5b5fff] text-white'
-                                                : 'bg-white/90 text-slate-700 hover:bg-white'
+                                            ? 'bg-[#5b5fff] text-white'
+                                            : 'bg-white/90 text-slate-700 hover:bg-white'
                                             }`}
                                     >
                                         {isCompareMode ? '比較を終了' : '前回と比較'}

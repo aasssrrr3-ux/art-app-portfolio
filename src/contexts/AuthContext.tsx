@@ -79,8 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 setUser(data)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[Auth] Error fetching user:', error)
+            console.error('[Auth] Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            })
             setUser(null)
         } finally {
             console.log('[Auth] Setting loading to false')

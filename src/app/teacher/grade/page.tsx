@@ -335,7 +335,7 @@ export default function TeacherGradePage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -433,7 +433,7 @@ export default function TeacherGradePage() {
             <div className="max-w-4xl mx-auto">
                 {/* Submission Rate */}
                 <div className="card-soft-sm p-6 mb-6">
-                    <p className="text-xs text-[#5b5fff] uppercase tracking-wider font-semibold mb-2">
+                    <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-2">
                         SUBMISSION RATE
                     </p>
                     <p className="text-5xl font-bold text-slate-900">{submissionRate}<span className="text-2xl">%</span></p>
@@ -459,7 +459,7 @@ export default function TeacherGradePage() {
                                     const submitted = getSubmissionStatus(member.user_id)
                                     return (
                                         <tr key={member.id} className="border-t border-slate-100">
-                                            <td className="px-4 py-4 text-[#5b5fff] font-medium">
+                                            <td className="px-4 py-4 text-primary font-medium">
                                                 {member.student_number || '-'}
                                             </td>
                                             <td className="px-4 py-4 font-medium text-slate-900">
@@ -476,7 +476,7 @@ export default function TeacherGradePage() {
                                                 {submitted && (
                                                     <button
                                                         onClick={() => viewWork(member)}
-                                                        className="text-[#5b5fff] text-sm font-medium hover:underline"
+                                                        className="text-primary text-sm font-medium hover:underline"
                                                     >
                                                         VIEW WORK →
                                                     </button>
@@ -894,7 +894,7 @@ export default function TeacherGradePage() {
                                     </button>
                                     <button
                                         onClick={togglePlayback}
-                                        className="p-4 bg-[#5b5fff] rounded-full hover:bg-[#4a4eee] transition"
+                                        className="p-4 bg-primary rounded-full hover:bg-primary-dark transition"
                                     >
                                         {isPlaying ? (
                                             <Pause className="w-8 h-8 text-white" />
@@ -924,7 +924,7 @@ export default function TeacherGradePage() {
                                                 key={speed}
                                                 onClick={() => setPlaySpeed(speed)}
                                                 className={`px-3 py-1 rounded-full text-xs font-medium transition ${playSpeed === speed
-                                                    ? 'bg-[#5b5fff] text-white'
+                                                    ? 'bg-primary text-white'
                                                     : 'bg-white/10 text-white/60 hover:bg-white/20'
                                                     }`}
                                             >
@@ -947,7 +947,7 @@ export default function TeacherGradePage() {
                                                 setCurrentIndex(idx)
                                                 setIsPlaying(false)
                                             }}
-                                            className={`flex-1 h-1 rounded-full transition ${idx <= currentIndex ? 'bg-[#5b5fff]' : 'bg-white/20'
+                                            className={`flex-1 h-1 rounded-full transition ${idx <= currentIndex ? 'bg-primary' : 'bg-white/20'
                                                 }`}
                                         />
                                     ))}

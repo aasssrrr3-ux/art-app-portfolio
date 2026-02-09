@@ -193,13 +193,6 @@ export default function StudentHomePage() {
                         )}
                     </div>
 
-                    {/* Logout */}
-                    <button
-                        onClick={handleSignOut}
-                        className="text-slate-400 hover:text-slate-600 text-sm"
-                    >
-                        EXIT
-                    </button>
                 </div>
             </div>
 

@@ -86,7 +86,7 @@ export default function TeacherHomePage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -102,13 +102,6 @@ export default function TeacherHomePage() {
                     </h1>
                 </div>
 
-                <button
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 text-slate-400 hover:text-slate-600 text-sm"
-                >
-                    <LogOut className="w-4 h-4" />
-                    ログアウト
-                </button>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -118,7 +111,7 @@ export default function TeacherHomePage() {
                         <h2 className="text-lg font-bold text-slate-900">クラス一覧</h2>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-1 text-[#5b5fff] hover:text-[#4b4fe0] text-sm font-medium"
+                            className="flex items-center gap-1 text-primary hover:text-primary-dark text-sm font-medium"
                         >
                             <Plus className="w-4 h-4" />
                             新規作成
@@ -157,7 +150,7 @@ export default function TeacherHomePage() {
 
                     <Link href="/teacher/taskbox" className="block">
                         <div className="menu-card py-6 flex-row gap-4 justify-start px-6">
-                            <div className="w-12 h-12 rounded-xl bg-[#5b5fff] flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
                                 <FolderPlus className="w-6 h-6 text-white" />
                             </div>
                             <div className="text-left">

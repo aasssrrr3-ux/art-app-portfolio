@@ -286,7 +286,7 @@ export default function TeacherClassDetailPage() {
     if (loading || isDataLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
@@ -359,7 +359,7 @@ export default function TeacherClassDetailPage() {
                             {members.map(member => (
                                 <div key={member.id} className="p-4 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-[#5b5fff] flex items-center justify-center text-white font-bold">
+                                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
                                             {member.student_number}
                                         </div>
                                         <div>
@@ -373,7 +373,7 @@ export default function TeacherClassDetailPage() {
                                     </div>
                                     <button
                                         onClick={() => setManagingMember(member)}
-                                        className="p-2 text-slate-400 hover:text-[#5b5fff] hover:bg-slate-100 rounded-full transition"
+                                        className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-full transition"
                                         title="設定"
                                     >
                                         <Settings className="w-5 h-5" />
@@ -500,7 +500,7 @@ export default function TeacherClassDetailPage() {
                             />
                             <button
                                 onClick={() => fileInputRef.current?.click()}
-                                className="flex items-center gap-2 px-6 py-3 bg-[#5b5fff] text-white rounded-xl hover:bg-[#4a4eee] transition mx-auto"
+                                className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition mx-auto"
                             >
                                 <Upload className="w-5 h-5" />
                                 ファイルを選択
