@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setSession(session)
 
                 // EMERGENCY FIX: Prioritize transition and safety net
+                // Trigger Vercel deploy
                 if (event === 'SIGNED_IN') {
                     // 1. Immediately redirect to home logic
                     router.push('/')
