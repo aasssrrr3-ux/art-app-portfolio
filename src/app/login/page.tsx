@@ -43,7 +43,18 @@ function LoginForm() {
                 const { error } = await signIn(email, password)
                 if (error) {
                     setError('メールアドレスまたはパスワードが正しくありません')
+                    setIsLoading(false)
+                    return
                 }
+
+                // Login successful, wait for redirect or timeout
+                // If user data takes too long to load, show manual error
+                setTimeout(() => {
+                    if (window.location.pathname === '/login') {
+                        setIsLoading(false)
+                        setError('ログインには成功しましたが、データの読み込みに時間がかかっています。ページを再読み込みしてください。')
+                    }
+                }, 8000)
             } else {
                 // Signup
                 if (isTeacher) {
@@ -62,7 +73,6 @@ function LoginForm() {
             }
         } catch (err: any) {
             setError(err.message || 'エラーが発生しました')
-        } finally {
             setIsLoading(false)
         }
     }

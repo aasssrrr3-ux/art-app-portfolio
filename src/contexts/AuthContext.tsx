@@ -86,51 +86,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUser = async (userId: string) => {
         console.log('[Auth] Fetching user:', userId)
+        let userData: User | null = null
+
         try {
-            // Attempt to fetch from public.users
+            // First: Try to get data from session metadata (Fastest & Most Reliable for basic info)
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user && session.user.id === userId) {
+                const metadata = session.user.user_metadata
+                if (metadata && metadata.role) {
+                    userData = {
+                        id: session.user.id,
+                        email: session.user.email || '',
+                        name: metadata.name || 'Unknown',
+                        role: metadata.role,
+                        created_at: session.user.created_at
+                    }
+                    console.log('[Auth] Loaded user from session metadata')
+                }
+            }
+
+            // Second: Try to fetch/update from public.users (DB)
+            // Even if this fails, we can fallback to userData from metadata if we have it
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', userId)
                 .single()
 
-            console.log('[Auth] User fetch result:', { data, error })
-
-            if (error) {
-                console.error('[Auth] User fetch error:', error)
-                throw error
+            if (!error && data) {
+                console.log('[Auth] Loaded user from DB')
+                userData = data
+            } else if (error) {
+                console.warn('[Auth] DB fetch failed, using fallback:', error.message)
             }
 
-            if (data) {
-                setUser(data)
-            }
+            // Set the final user state
+            setUser(userData)
+
         } catch (error: any) {
-            console.error('[Auth] Error fetching user from DB, trying fallback:', error)
-
-            // FALLBACK: Try to construct user from session metadata
-            // This ensures login works even if public.users is inaccessible (RLS/DB issues)
-            const currentSession = await supabase.auth.getSession()
-            const authUser = currentSession.data.session?.user
-
-            if (authUser && authUser.id === userId) {
-                const metadata = authUser.user_metadata
-                if (metadata && metadata.role) {
-                    console.warn('[Auth] Using metadata fallback for user data')
-                    setUser({
-                        id: authUser.id,
-                        email: authUser.email || '',
-                        name: metadata.name || 'Unknown',
-                        role: metadata.role,
-                        created_at: authUser.created_at
-                    })
-                } else {
-                    setUser(null)
-                }
-            } else {
-                setUser(null)
-            }
+            console.error('[Auth] Error in fetchUser:', error)
+            // Ensure we don't leave user as null if we had metadata
+            if (!userData) setUser(null)
         } finally {
-            console.log('[Auth] Setting loading to false')
+            console.log('[Auth] Fetch finished, setLoading(false)')
             setLoading(false)
         }
     }
