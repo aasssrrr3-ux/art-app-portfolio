@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clearTimeout(timer)
             setSession(session)
             if (session?.user) {
-                fetchUser(session.user.id)
+                fetchUser(session.user.id, session)
             } else {
                 setLoading(false)
             }
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.log('[Auth] Auth state changed:', event, session?.user?.email)
                 setSession(session)
                 if (session?.user) {
-                    await fetchUser(session.user.id)
+                    await fetchUser(session.user.id, session)
                 } else {
                     setUser(null)
                     setLoading(false)
@@ -84,26 +84,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
-    const fetchUser = async (userId: string) => {
+    const fetchUser = async (userId: string, existingSession?: Session | null) => {
         console.log('[Auth] Fetching user:', userId)
 
         // 1. Optimistic Update from Session Metadata (Immediate)
-        // This ensures the user is "logged in" even if the DB call below hangs/fails.
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.user && session.user.id === userId) {
-                const metadata = session.user.user_metadata
+            // Use provided session OR fetch if not provided
+            let currentSession = existingSession
+            if (!currentSession) {
+                const { data } = await supabase.auth.getSession()
+                currentSession = data.session
+            }
+
+            if (currentSession?.user && currentSession.user.id === userId) {
+                const metadata = currentSession.user.user_metadata
                 if (metadata && metadata.role) {
                     const optimisticUser = {
-                        id: session.user.id,
-                        email: session.user.email || '',
+                        id: currentSession.user.id,
+                        email: currentSession.user.email || '',
                         name: metadata.name || 'Unknown',
                         role: metadata.role,
-                        created_at: session.user.created_at
+                        created_at: currentSession.user.created_at
                     }
                     console.log('[Auth] Optimistically setting user from metadata')
                     setUser(optimisticUser)
-                    // If we have data, we can stop loading tentatively
                     setLoading(false)
                 }
             }
@@ -170,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (dbError) throw dbError
 
                 // Fetch user data to update context state immediately
-                await fetchUser(authData.user.id)
+                await fetchUser(authData.user.id, authData.session)
             }
 
             return { error: null }
