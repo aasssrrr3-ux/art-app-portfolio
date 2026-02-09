@@ -17,7 +17,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    // Ensure router is defined
     const router = useRouter()
     const [session, setSession] = useState<Session | null>(null)
     const [user, setUser] = useState<User | null>(null)
@@ -41,13 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             async (event, session) => {
                 setSession(session)
 
-                // EMERGENCY FIX: Prioritize transition and safety net
-                // Trigger Vercel deploy
+                // LOGIN LOGIC REFINEMENT: Role-based redirect & Safety Net
                 if (event === 'SIGNED_IN') {
-                    // 1. Immediately redirect to home logic
-                    router.push('/')
+                    const role = session?.user?.user_metadata?.role
+                    let target = '/'
 
-                    // 2. Safety Valve: Force loading end in 2s regardless of DB fetch
+                    if (role === 'student') target = '/student/home'
+                    else if (role === 'teacher') target = '/teacher/home'
+
+                    console.log(`[Auth] Role: ${role}, Redirecting to: ${target}`)
+                    router.push(target)
+
+                    // Safety Valve: Force loading end in 2s
                     setTimeout(() => {
                         setLoading(false)
                     }, 2000)
