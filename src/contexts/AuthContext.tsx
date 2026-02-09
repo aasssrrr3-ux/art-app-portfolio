@@ -86,27 +86,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const fetchUser = async (userId: string) => {
         console.log('[Auth] Fetching user:', userId)
-        let userData: User | null = null
 
+        // 1. Optimistic Update from Session Metadata (Immediate)
+        // This ensures the user is "logged in" even if the DB call below hangs/fails.
         try {
-            // First: Try to get data from session metadata (Fastest & Most Reliable for basic info)
             const { data: { session } } = await supabase.auth.getSession()
             if (session?.user && session.user.id === userId) {
                 const metadata = session.user.user_metadata
                 if (metadata && metadata.role) {
-                    userData = {
+                    const optimisticUser = {
                         id: session.user.id,
                         email: session.user.email || '',
                         name: metadata.name || 'Unknown',
                         role: metadata.role,
                         created_at: session.user.created_at
                     }
-                    console.log('[Auth] Loaded user from session metadata')
+                    console.log('[Auth] Optimistically setting user from metadata')
+                    setUser(optimisticUser)
+                    // If we have data, we can stop loading tentatively
+                    setLoading(false)
                 }
             }
+        } catch (e) {
+            console.error('[Auth] Error getting session for optimistic update:', e)
+        }
 
-            // Second: Try to fetch/update from public.users (DB)
-            // Even if this fails, we can fallback to userData from metadata if we have it
+        // 2. Fetch from DB to get latest data (async)
+        try {
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
@@ -114,21 +120,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .single()
 
             if (!error && data) {
-                console.log('[Auth] Loaded user from DB')
-                userData = data
+                console.log('[Auth] Loaded fresh user data from DB')
+                setUser(data)
             } else if (error) {
-                console.warn('[Auth] DB fetch failed, using fallback:', error.message)
+                console.warn('[Auth] DB fetch failed, keeping metadata user:', error.message)
             }
 
-            // Set the final user state
-            setUser(userData)
-
         } catch (error: any) {
-            console.error('[Auth] Error in fetchUser:', error)
-            // Ensure we don't leave user as null if we had metadata
-            if (!userData) setUser(null)
+            console.error('[Auth] Error in fetchUser DB call:', error)
         } finally {
-            console.log('[Auth] Fetch finished, setLoading(false)')
+            console.log('[Auth] Fetch process finished')
             setLoading(false)
         }
     }
