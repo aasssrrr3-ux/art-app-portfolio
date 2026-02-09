@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase, User, Role } from '@/lib/supabase'
 import { Session } from '@supabase/supabase-js'
 
@@ -16,39 +17,40 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const router = useRouter()
     const [session, setSession] = useState<Session | null>(null)
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         // Get initial session
-        // This is the source of truth for the initial loading state
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session)
             if (session?.user) {
-                // If we have a session, we must fetch the user details
                 fetchUser(session.user.id, session)
             } else {
-                // Truly no session, stop loading
-                console.log('[Auth] No session found, stopping loading')
                 setLoading(false)
             }
         }).catch(err => {
-            console.error('[Auth] Initial session error:', err)
             setLoading(false)
         })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log(`[Auth] Auth state changed: ${event}`)
                 setSession(session)
 
-                // SPECIAL HANDLING:
-                // 'INITIAL_SESSION' is fired immediately by Supabase client.
-                // We MUST ignore it for 'loading' state because getSession() above is handling the initial check.
-                // If we set loading=false here when session is null (which it is for INITIAL_SESSION often),
-                // we race with getSession() and cause premature redirects.
+                // EMERGENCY FIX: Prioritize transition and safety net
+                if (event === 'SIGNED_IN') {
+                    // 1. Immediately redirect to home logic
+                    router.push('/')
+
+                    // 2. Safety Valve: Force loading end in 2s regardless of DB fetch
+                    setTimeout(() => {
+                        setLoading(false)
+                    }, 2000)
+                }
+
                 if (event === 'INITIAL_SESSION') {
                     return
                 }
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription.unsubscribe()
         }
-    }, [])
+    }, [router])
 
     const fetchUser = async (userId: string, existingSession?: Session | null) => {
         // 1. Optimistic Update from Session Metadata (Immediate)
@@ -85,13 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     role: metadata.role,
                     created_at: currentSession.user.created_at
                 })
-                // We can't set loading=false here comfortably because we still want to fetch fresh data,
-                // BUT if we want UI to be snappy, we could. 
-                // However, let's wait for DB to be sure unless we want Stale-While-Revalidate.
-                // For now, let's actually allow optimistic rendering if we have data.
             }
         } catch (e) {
-            console.error('[Auth] Optimistic update error:', e)
+            // silent fail for optimistic update
         }
 
         // 2. Fetch from DB to get latest data (async)
@@ -104,12 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (!error && data) {
                 setUser(data)
-            } else if (error) {
-                console.warn('[Auth] DB fetch failed:', error.message)
             }
-
         } catch (error: any) {
-            console.error('[Auth] Error in fetchUser DB call:', error)
+            // silent fail
         } finally {
             setLoading(false)
         }
