@@ -22,13 +22,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Start a fallback timer to force loading to false if Supabase hangs
-        const timer = setTimeout(() => {
-            console.warn('[Auth] Loading took too long, forcing completion')
+        // Start a fallback timer to force loading to false if Supabase hangs
+        const timer = setTimeout(async () => {
+            console.warn('[Auth] Loading took too long, forcing logic')
+
+            // Try to recover from session if available
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user?.user_metadata?.role) {
+                console.warn('[Auth] Recovering user from session metadata due to timeout')
+                setUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: session.user.user_metadata.name || 'Unknown',
+                    role: session.user.user_metadata.role,
+                    created_at: session.user.created_at
+                })
+            }
+
             setLoading(false)
         }, 5000) // 5 seconds timeout
 
         // Get initial session
+        console.log('[Auth] Calling supabase.auth.getSession()...')
         supabase.auth.getSession().then(({ data: { session } }) => {
+            console.log('[Auth] getSession finished', { hasSession: !!session })
             clearTimeout(timer)
             setSession(session)
             if (session?.user) {
@@ -70,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUser = async (userId: string) => {
         console.log('[Auth] Fetching user:', userId)
         try {
+            // Attempt to fetch from public.users
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
@@ -80,21 +98,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (error) {
                 console.error('[Auth] User fetch error:', error)
-                // User might exist in auth but not in public.users
-                // This can happen with Excel import
-                setUser(null)
-            } else {
+                throw error
+            }
+
+            if (data) {
                 setUser(data)
             }
         } catch (error: any) {
-            console.error('[Auth] Error fetching user:', error)
-            console.error('[Auth] Error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            })
-            setUser(null)
+            console.error('[Auth] Error fetching user from DB, trying fallback:', error)
+
+            // FALLBACK: Try to construct user from session metadata
+            // This ensures login works even if public.users is inaccessible (RLS/DB issues)
+            const currentSession = await supabase.auth.getSession()
+            const authUser = currentSession.data.session?.user
+
+            if (authUser && authUser.id === userId) {
+                const metadata = authUser.user_metadata
+                if (metadata && metadata.role) {
+                    console.warn('[Auth] Using metadata fallback for user data')
+                    setUser({
+                        id: authUser.id,
+                        email: authUser.email || '',
+                        name: metadata.name || 'Unknown',
+                        role: metadata.role,
+                        created_at: authUser.created_at
+                    })
+                } else {
+                    setUser(null)
+                }
+            } else {
+                setUser(null)
+            }
         } finally {
             console.log('[Auth] Setting loading to false')
             setLoading(false)
