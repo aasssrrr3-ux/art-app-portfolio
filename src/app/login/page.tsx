@@ -40,6 +40,7 @@ function LoginForm() {
         try {
             if (isLoginMode) {
                 // Login
+                // Optimistic UI: Don't clear inputs, just show loading
                 const { error } = await signIn(email, password)
                 if (error) {
                     setError('メールアドレスまたはパスワードが正しくありません')
@@ -47,14 +48,10 @@ function LoginForm() {
                     return
                 }
 
-                // Login successful, wait for redirect or timeout
-                // If user data takes too long to load, show manual error
-                setTimeout(() => {
-                    if (window.location.pathname === '/login') {
-                        setIsLoading(false)
-                        setError('ログインには成功しましたが、データの読み込みに時間がかかっています。ページを再読み込みしてください。')
-                    }
-                }, 8000)
+                // Login successful.
+                // AuthContext will detect change and redirect.
+                // We keep isLoading=true to show the spinner and prevent interaction.
+                // Do NOT clear form or show errors prematurely.
             } else {
                 // Signup
                 if (isTeacher) {

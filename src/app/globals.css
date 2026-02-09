@@ -32,9 +32,54 @@
   /* Teal-600 */
   --primary-dark: #0f766e;
   /* Teal-700 */
-  --background: #f0fdf4;
-  /* Teal-50 */
+  --background: #0f172a;
+  /* Slate-900 */
+  color: #ffffff;
 }
+
+/* Teacher Theme Text Overrides - High Contrast / Accessibility */
+.theme-teacher h1,
+.theme-teacher h2,
+.theme-teacher h3,
+.theme-teacher h4,
+.theme-teacher h5,
+.theme-teacher h6,
+.theme-teacher p,
+.theme-teacher span,
+.theme-teacher div,
+.theme-teacher li {
+  color: inherit;
+}
+
+.theme-teacher .text-slate-900,
+.theme-teacher .text-slate-800,
+.theme-teacher .text-slate-700,
+.theme-teacher .text-slate-600 {
+  color: #f1f5f9 !important;
+  /* Force nearly white */
+}
+
+.theme-teacher .text-slate-500,
+.theme-teacher .text-slate-400 {
+  color: #cbd5e1 !important;
+  /* Lighter gray for secondary text */
+}
+
+.theme-teacher .page-title {
+  color: #ffffff !important;
+}
+
+.theme-teacher .page-subtitle {
+  color: #fcd34d !important;
+  /* Amber-300: High contrast gold for decoration/accents */
+}
+
+/* Navbar specific overrides for Teacher */
+.theme-teacher svg {
+  color: #ffffff;
+  /* Make icons white */
+}
+
 
 
 
