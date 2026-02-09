@@ -42,11 +42,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
                 // LOGIN LOGIC REFINEMENT: Role-based redirect & Safety Net
                 if (event === 'SIGNED_IN') {
-                    const role = session?.user?.user_metadata?.role
+                    let role = session?.user?.user_metadata?.role
                     let target = '/'
 
+                    // Robust Role Fetching: Fallback to DB if metadata is missing
+                    if (!role && session?.user?.id) {
+                        try {
+                            const { data, error } = await supabase
+                                .from('users')
+                                .select('role')
+                                .eq('id', session.user.id)
+                                .single()
+
+                            if (error) {
+                                // .single() throws if 0 rows, catch it here
+                                console.warn('[Auth] Role fetch from DB failed:', error.message)
+                            } else if (data) {
+                                role = data.role
+                            }
+                        } catch (err) {
+                            console.error('[Auth] Unexpected error fetching role:', err)
+                        }
+                    }
+
+                    // Strict Role Check
                     if (role === 'student') target = '/student/home'
                     else if (role === 'teacher') target = '/teacher/home'
+                    else {
+                        // Error: Role undefined or invalid
+                        console.error('[Auth] User has no valid role:', role)
+                        alert('ユーザー権限が設定されていません。ログインできません。')
+                        await supabase.auth.signOut() // Prevent stuck state
+                        setLoading(false)
+                        return // Stop here
+                    }
 
                     console.log(`[Auth] Role: ${role}, Redirecting to: ${target}`)
                     router.push(target)
