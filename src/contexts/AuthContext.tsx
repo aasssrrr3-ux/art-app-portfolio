@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
+            clearTimeout(timer)
             setSession(session)
             if (session?.user) {
                 fetchUser(session.user.id)
@@ -36,7 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setLoading(false)
             }
         }).catch(err => {
-            console.error('[Auth] Initial session error:', err)
+            clearTimeout(timer)
+            // Ignore AbortError which can happen on fast navigations/strict mode
+            if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+                console.warn('[Auth] Session fetch aborted')
+            } else {
+                console.error('[Auth] Initial session error:', err)
+            }
             setLoading(false)
         })
 
