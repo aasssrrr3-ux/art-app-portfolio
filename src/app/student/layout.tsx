@@ -20,7 +20,11 @@ export default function StudentLayout({
     }
 
     return (
-        <div className="theme-student min-h-screen bg-slate-50 pb-20 md:pb-0">
+        <div className="theme-student min-h-screen bg-[#fafafa] pb-20 md:pb-0 relative">
+            {/* Mode Badge */}
+            <div className="fixed top-4 right-4 z-50 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-emerald-200">
+                [生徒モード]
+            </div>
             {children}
 
             {/* Fixed Bottom Navigation for Mobile / Floating for Desktop */}

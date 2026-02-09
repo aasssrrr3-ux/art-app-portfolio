@@ -20,7 +20,11 @@ export default function TeacherLayout({
     }
 
     return (
-        <div className="theme-teacher min-h-screen bg-slate-50 pb-20 md:pb-0">
+        <div className="theme-teacher min-h-screen bg-[#0f172a] text-slate-100 pb-20 md:pb-0 relative">
+            {/* Mode Badge */}
+            <div className="fixed top-4 right-4 z-50 bg-amber-500 text-[#0f172a] px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-amber-400">
+                [先生モード]
+            </div>
             {children}
 
             {/* Fixed Bottom Navigation for Mobile / Floating for Desktop */}
