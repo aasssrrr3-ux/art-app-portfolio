@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { ChevronLeft, Mail, Lock, LogIn, UserPlus, Key } from 'lucide-react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 function LoginForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { signIn, signUp, user, loading } = useAuth()
+    // const supabase = createClientComponentClient() // Removed in favor of lib/supabase instance
 
     const role = searchParams.get('role') || 'student'
     const isTeacher = role === 'teacher'
@@ -41,17 +43,47 @@ function LoginForm() {
             if (isLoginMode) {
                 // Login
                 // Optimistic UI: Don't clear inputs, just show loading
-                const { error } = await signIn(email, password)
+                const { data, error } = await signIn(email, password)
+
                 if (error) {
                     setError('メールアドレスまたはパスワードが正しくありません')
                     setIsLoading(false)
                     return
                 }
 
-                // Login successful.
-                // AuthContext will detect change and redirect.
-                // We keep isLoading=true to show the spinner and prevent interaction.
-                // Do NOT clear form or show errors prematurely.
+                // DIRECT REDIRECT LOGIC
+                if (data?.user) {
+                    let role = data.user.user_metadata?.role
+
+                    // Fallback to DB if metadata missing (same logic as AuthContext for redundancy)
+                    if (!role) {
+                        const { data: dbData } = await supabase
+                            .from('users')
+                            .select('role')
+                            .eq('id', data.user.id)
+                            .single()
+                        if (dbData) role = dbData.role
+                    }
+
+                    if (role === 'student') {
+                        router.push('/student/home')
+                        return // Stop execution, let router handle it
+                    } else if (role === 'teacher') {
+                        router.push('/teacher/home')
+                        return // Stop execution
+                    }
+                }
+
+                // If we get here, either role invalid or just waiting for AuthContext
+                // Set timeout guard
+                setTimeout(() => {
+                    if (window.location.pathname === '/login') {
+                        setIsLoading(false)
+                        setError('ログイン応答がありません。もう一度お試しください。')
+                        setPassword('') // Safety reset
+                    }
+                }, 5000)
+
             } else {
                 // Signup
                 if (isTeacher) {
@@ -218,7 +250,7 @@ function LoginForm() {
                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
                             テストアカウント
                         </p>
-                        <p className="text-sm text-slate-700">
+                        <div className="text-sm text-slate-700">
                             {isTeacher ? (
                                 <>
                                     Email: <code className="bg-slate-200 px-1 rounded">teacher@test.com</code><br />
@@ -231,7 +263,7 @@ function LoginForm() {
                                     <p className="mt-1 text-slate-400">※デバッグ用アカウントです</p>
                                 </>
                             )}
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>

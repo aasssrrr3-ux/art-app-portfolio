@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class } from '@/lib/supabase'
-import { Camera, Share2, Clock, ChevronDown, LogOut, UserPlus, Heart } from 'lucide-react'
+import { Camera, Share2, Clock, ChevronDown, UserPlus, Heart } from 'lucide-react'
 import Link from 'next/link'
 
 export default function StudentHomePage() {
     const router = useRouter()
-    const { user, loading, signOut } = useAuth()
+    const { user, loading } = useAuth()
     const [classes, setClasses] = useState<Class[]>([])
     const [selectedClass, setSelectedClass] = useState<Class | null>(null)
     const [showDropdown, setShowDropdown] = useState(false)
@@ -68,10 +68,7 @@ export default function StudentHomePage() {
 
 
 
-    const handleSignOut = async () => {
-        await signOut()
-        router.push('/')
-    }
+
 
     // Show loading spinner while checking auth OR fetching classes
     if (loading || (user && isFetchingClasses)) {
@@ -93,7 +90,7 @@ export default function StudentHomePage() {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 pr-48">
                     {/* Favorites Link */}
                     <Link href="/student/favorites">
                         <button className="p-2 rounded-full hover:bg-slate-100 transition text-slate-400 hover:text-pink-500">

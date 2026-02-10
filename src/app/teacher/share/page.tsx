@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class, Work } from '@/lib/supabase'
-import { ChevronLeft, Camera, Image, Upload, ChevronDown, Send, X, User } from 'lucide-react'
+import { ChevronLeft, Camera, Image as ImageIcon, Folder, Upload, ChevronDown, Send, X, User, Check } from 'lucide-react'
 import Link from 'next/link'
 
 interface ClassMemberWithUser {
@@ -29,11 +29,14 @@ export default function TeacherSharePage() {
     const [selectedClass, setSelectedClass] = useState<Class | null>(null)
     const [showClassDropdown, setShowClassDropdown] = useState(false)
 
-    const [mode, setMode] = useState<'select' | 'camera' | 'preview'>('select')
+    const [mode, setMode] = useState<'select' | 'camera' | 'preview' | 'success'>('select')
     const [capturedImage, setCapturedImage] = useState<string | null>(null)
     const [title, setTitle] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [stream, setStream] = useState<MediaStream | null>(null)
+    const [praise, setPraise] = useState('')
+
+    const praiseMessages = ['がんばったね！', '今日もいい感じ！', '最高の一枚だね！', '明日もまた描こう！']
 
     // Work Selection State
     const [isWorkSelectorOpen, setIsWorkSelectorOpen] = useState(false)
@@ -224,8 +227,9 @@ export default function TeacherSharePage() {
                     image_url: publicUrl
                 })
 
-            alert('共有しました！')
-            setMode('select')
+            // alert('共有しました！')
+            setPraise(praiseMessages[Math.floor(Math.random() * praiseMessages.length)])
+            setMode('success')
             setCapturedImage(null)
             setTitle('')
         } catch (error) {
@@ -245,189 +249,247 @@ export default function TeacherSharePage() {
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
-            {/* Header */}
+        <div className="min-h-screen pt-24 px-4 pb-4 md:pt-24 md:px-8 md:pb-8">
+            {/* Header - 常に表示 */}
             <div className="page-header mb-6">
-                <Link href="/teacher/home" className="back-button">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                <Link
+                    href="/teacher/home"
+                    className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center hover:bg-slate-50 transition"
+                >
+                    <ChevronLeft className="w-6 h-6 text-black" strokeWidth={4} />
                 </Link>
                 <div>
-                    <p className="page-subtitle">SHARE RESOURCES</p>
-                    <h1 className="page-title">資料共有</h1>
+                    <h1 className="text-2xl font-black text-black tracking-tight leading-none">SHARE RESOURCES</h1>
+                    <p className="text-sm font-bold text-black mt-0.5">資料共有</p>
                 </div>
             </div>
 
             <div className="max-w-xl mx-auto">
-                {/* Class Selector */}
-                <div className="card-soft-sm p-4 mb-6">
-                    <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-3">
-                        STEP 1: クラスを選択
-                    </p>
+                {/* 成功画面（mode === 'success' の時に表示） */}
+                {mode === 'success' ? (
+                    <div className="card-soft p-12 text-center animate-in fade-in zoom-in duration-300">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Check className="w-10 h-10 text-black" strokeWidth={4} />
+                        </div>
+                        <h2 className="text-3xl font-black text-black mb-2">{praise}</h2>
+                        <p className="text-slate-600 font-bold mb-10">資料をクラスに共有しました！</p>
 
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowClassDropdown(!showClassDropdown)}
-                            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 rounded-lg text-left"
-                        >
-                            <span className="text-slate-900 font-medium">
-                                {selectedClass?.name || '配信先のクラスを選択してください'}
-                            </span>
-                            <ChevronDown className="w-5 h-5 text-slate-400" />
-                        </button>
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => router.push('/teacher/portfolio')}
+                                className="btn-primary w-full py-4 text-lg font-black flex items-center justify-center gap-2"
+                            >
+                                振り返り機能へ
+                            </button>
+                            <button
+                                onClick={() => router.push('/teacher/gallery')}
+                                className="btn-secondary w-full py-4 text-lg font-black flex items-center justify-center gap-2"
+                            >
+                                みんなのギャラリーへ
+                            </button>
+                            <button
+                                onClick={() => setMode('select')}
+                                className="text-slate-400 font-bold text-sm mt-4 hover:text-black transition"
+                            >
+                                ← 続けて別の資料を共有する
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Class Selector */}
+                        <div className="card-soft-sm p-4 mb-6">
+                            <p className="text-xs text-primary uppercase tracking-wider font-semibold mb-3">
+                                STEP 1: クラスを選択
+                            </p>
 
-                        {showClassDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10 max-h-60 overflow-y-auto">
-                                {classes.map(cls => (
-                                    <button
-                                        key={cls.id}
-                                        onClick={() => {
-                                            setSelectedClass(cls)
-                                            setShowClassDropdown(false)
-                                        }}
-                                        className="w-full px-4 py-3 text-left hover:bg-slate-50 text-slate-700 block"
-                                    >
-                                        {cls.name}
-                                    </button>
-                                ))}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowClassDropdown(!showClassDropdown)}
+                                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 rounded-lg text-left"
+                                >
+                                    <span className="text-slate-900 font-medium">
+                                        {selectedClass?.name || '配信先のクラスを選択してください'}
+                                    </span>
+                                    <ChevronDown className="w-5 h-5 text-black" strokeWidth={4} />
+                                </button>
+
+                                {showClassDropdown && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10 max-h-60 overflow-y-auto">
+                                        {classes.map(cls => (
+                                            <button
+                                                key={cls.id}
+                                                onClick={() => {
+                                                    setSelectedClass(cls)
+                                                    setShowClassDropdown(false)
+                                                }}
+                                                className="w-full px-4 py-3 text-left hover:bg-slate-50 text-slate-700 block"
+                                            >
+                                                {cls.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {!selectedClass && (
+                                <p className="text-primary text-sm mt-3 text-center">
+                                    ↑ まずはクラスを選択してください
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Mode Selection / Content */}
+                        {mode === 'select' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                <button
+                                    onClick={() => {
+                                        setMode('camera')
+                                        startCamera()
+                                    }}
+                                    className="card-soft p-6 flex flex-col items-center justify-center gap-4 text-center hover:scale-[1.02] transition active:scale-95 group"
+                                >
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition">
+                                        <Camera className="w-10 h-10 text-black" strokeWidth={4} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-black">写真を撮影</h3>
+                                        <p className="text-xs text-slate-800 font-bold mb-1">カメラを起動</p>
+                                        <p className="text-[10px] text-slate-800 uppercase font-bold opacity-80">CAPTURE NOW</p>
+                                    </div>
+                                </button>
+
+                                <label className="card-soft p-6 flex flex-col items-center justify-center gap-4 text-center hover:scale-[1.02] transition active:scale-95 group cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                    />
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition">
+                                        <ImageIcon className="w-10 h-10 text-black" strokeWidth={4} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-black">画像を選択</h3>
+                                        <p className="text-xs text-slate-800 font-bold mb-1">端末からアップロード</p>
+                                        <p className="text-[10px] text-slate-800 uppercase font-bold opacity-80">UPLOAD FILE</p>
+                                    </div>
+                                </label>
+
+                                <button
+                                    onClick={() => {
+                                        setIsWorkSelectorOpen(true)
+                                        if (selectedClass && taskBoxes.length === 0) {
+                                            fetchTaskBoxes()
+                                        }
+                                    }}
+                                    className="card-soft p-6 flex flex-col items-center justify-center gap-4 text-center hover:scale-[1.02] transition active:scale-95 group md:col-span-2"
+                                >
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition">
+                                        <Folder className="w-10 h-10 text-black" strokeWidth={4} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-black">生徒の作品から選択</h3>
+                                        <p className="text-xs text-slate-800 font-bold mb-1">提出された作品を共有</p>
+                                        <p className="text-[10px] text-slate-800 uppercase font-bold opacity-80">SELECT STUDENT WORK</p>
+                                    </div>
+                                </button>
                             </div>
                         )}
-                    </div>
 
-                    {!selectedClass && (
-                        <p className="text-primary text-sm mt-3 text-center">
-                            ↑ まずはクラスを選択してください
-                        </p>
-                    )}
-                </div>
+                        {/* Camera Mode */}
+                        {mode === 'camera' && (
+                            <div className="card-soft overflow-hidden">
+                                <div className="relative aspect-[4/3] bg-black">
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <canvas ref={canvasRef} className="hidden" />
 
-                {/* Mode Selection / Content */}
-                {mode === 'select' && (
-                    <div className={`grid grid-cols-3 gap-4 ${!selectedClass ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <button
-                            onClick={() => setMode('camera')}
-                            className="menu-card active"
-                        >
-                            <Camera className="w-8 h-8 mb-3" />
-                            <p className="font-bold">撮影して共有</p>
-                            <p className="text-xs opacity-70 uppercase mt-1">CAPTURE NOW</p>
-                        </button>
+                                    <button
+                                        onClick={capturePhoto}
+                                        className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg hover:scale-105 transition"
+                                    >
+                                        <div className="w-12 h-12 rounded-full border-4 border-primary" />
+                                    </button>
 
-                        <button
-                            onClick={() => {
-                                setIsWorkSelectorOpen(true)
-                                if (selectedClass && taskBoxes.length === 0) {
-                                    fetchTaskBoxes()
-                                }
-                            }}
-                            className="menu-card"
-                        >
-                            <Image className="w-8 h-8 text-primary mb-3" />
-                            <p className="font-bold text-slate-900">作品から共有</p>
-                            <p className="text-xs text-slate-400 uppercase mt-1">SELECT STUDENT WORK</p>
-                        </button>
+                                    <button
+                                        onClick={() => {
+                                            if (stream) stream.getTracks().forEach(t => t.stop())
+                                            setMode('select')
+                                        }}
+                                        className="absolute top-4 left-4 px-4 py-2 bg-white/90 rounded-lg text-sm"
+                                    >
+                                        キャンセル
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="menu-card"
-                        >
-                            <Upload className="w-8 h-8 text-primary mb-3" />
-                            <p className="font-bold text-slate-900">画像を共有</p>
-                            <p className="text-xs text-slate-400 uppercase mt-1">UPLOAD FILE</p>
-                        </button>
-                    </div>
+                        {/* Preview Mode */}
+                        {mode === 'preview' && capturedImage && (
+                            <div className="space-y-4">
+                                <div className="card-soft overflow-hidden">
+                                    <img
+                                        src={capturedImage}
+                                        alt="Preview"
+                                        className="w-full aspect-[4/3] object-cover"
+                                    />
+                                </div>
+
+                                <div className="card-soft-sm p-4">
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                        タイトル
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        className="input-field"
+                                        placeholder="例: 水彩の良い例"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setCapturedImage(null)
+                                            setMode('select')
+                                        }}
+                                        className="btn-secondary flex-1"
+                                    >
+                                        やり直す
+                                    </button>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={isSubmitting || !title.trim()}
+                                        className="btn-primary flex-1 flex items-center justify-center gap-2"
+                                    >
+                                        {isSubmitting ? (
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                <Send className="w-5 h-5" />
+                                                共有する
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                        />
+                    </>
                 )}
-
-                {/* Camera Mode */}
-                {mode === 'camera' && (
-                    <div className="card-soft overflow-hidden">
-                        <div className="relative aspect-[4/3] bg-black">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                className="w-full h-full object-cover"
-                            />
-                            <canvas ref={canvasRef} className="hidden" />
-
-                            <button
-                                onClick={capturePhoto}
-                                className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg hover:scale-105 transition"
-                            >
-                                <div className="w-12 h-12 rounded-full border-4 border-primary" />
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    if (stream) stream.getTracks().forEach(t => t.stop())
-                                    setMode('select')
-                                }}
-                                className="absolute top-4 left-4 px-4 py-2 bg-white/90 rounded-lg text-sm"
-                            >
-                                キャンセル
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Preview Mode */}
-                {mode === 'preview' && capturedImage && (
-                    <div className="space-y-4">
-                        <div className="card-soft overflow-hidden">
-                            <img
-                                src={capturedImage}
-                                alt="Preview"
-                                className="w-full aspect-[4/3] object-cover"
-                            />
-                        </div>
-
-                        <div className="card-soft-sm p-4">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                タイトル
-                            </label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="input-field"
-                                placeholder="例: 水彩の良い例"
-                            />
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setCapturedImage(null)
-                                    setMode('select')
-                                }}
-                                className="btn-secondary flex-1"
-                            >
-                                やり直す
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting || !title.trim()}
-                                className="btn-primary flex-1 flex items-center justify-center gap-2"
-                            >
-                                {isSubmitting ? (
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        <Send className="w-5 h-5" />
-                                        共有する
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                />
             </div>
 
             {/* Work Selection Modal */}
@@ -484,7 +546,7 @@ export default function TeacherSharePage() {
                                     </div>
                                 ) : unitWorks.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                                        <Image className="w-12 h-12 mb-2 opacity-20" />
+                                        <ImageIcon className="w-12 h-12 mb-2 opacity-20" />
                                         <p>この単元の作品はまだありません</p>
                                     </div>
                                 ) : (

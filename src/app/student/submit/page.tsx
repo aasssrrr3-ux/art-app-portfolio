@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, TaskBox, Class } from '@/lib/supabase'
-import { ChevronLeft, Camera, Sun, ChevronDown, Send, RefreshCw, Grid } from 'lucide-react'
+import { ChevronLeft, Camera, Sun, ChevronDown, Send, RefreshCw, Grid, Check } from 'lucide-react'
 import Link from 'next/link'
 
 export default function StudentSubmitPage() {
@@ -28,6 +28,8 @@ export default function StudentSubmitPage() {
     const [step, setStep] = useState<'camera' | 'preview' | 'success'>('camera')
     const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
     const [showGrid, setShowGrid] = useState(false)
+    const [praise, setPraise] = useState('')
+    const praiseMessages = ['がんばったね！', '今日もいい感じ！', '最高の一枚だね！', '明日もまた描こう！']
 
     // Past Comparison State
     const [previousWorkUrl, setPreviousWorkUrl] = useState<string | null>(null)
@@ -222,6 +224,9 @@ export default function StudentSubmitPage() {
 
             if (insertError) throw insertError
 
+            if (insertError) throw insertError
+
+            setPraise(praiseMessages[Math.floor(Math.random() * praiseMessages.length)])
             setStep('success')
         } catch (error) {
             console.error('Error submitting work:', error)
@@ -242,28 +247,44 @@ export default function StudentSubmitPage() {
     if (step === 'success') {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-8">
-                <div className="card-soft p-12 text-center max-w-md">
-                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
+                <div className="card-soft p-12 text-center max-w-sm w-full animate-in fade-in zoom-in duration-300">
+                    <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                        <Check className="w-12 h-12 text-black" strokeWidth={4} />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-2">提出完了！</h2>
-                    <p className="text-slate-600 mb-8">作品が正常に提出されました</p>
-                    <Link href="/student/home" className="btn-primary inline-block">
-                        ホームに戻る
-                    </Link>
+                    <h2 className="text-3xl font-black text-black mb-2">{praise}</h2>
+                    <p className="text-slate-600 font-bold mb-10">作品が正常に提出されました</p>
+
+                    <div className="space-y-4">
+                        <button
+                            onClick={() => router.push('/student/portfolio')}
+                            className="btn-primary w-full py-4 text-lg font-black flex items-center justify-center gap-2"
+                        >
+                            振り返り機能へ
+                        </button>
+                        <button
+                            onClick={() => router.push('/student/gallery')}
+                            className="btn-secondary w-full py-4 text-lg font-black flex items-center justify-center gap-2"
+                        >
+                            みんなのギャラリーへ
+                        </button>
+                        <Link
+                            href="/student/home"
+                            className="text-black font-black underline decoration-2 text-sm mt-4 hover:opacity-70 transition inline-block"
+                        >
+                            ホームに戻る
+                        </Link>
+                    </div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
+        <div className="min-h-screen pt-20 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
             {/* Header */}
             <div className="page-header mb-6">
                 <Link href="/student/home" className="back-button">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                    <ChevronLeft className="w-6 h-6 text-black" strokeWidth={4} />
                 </Link>
                 <div>
                     <p className="page-subtitle">SUBMIT WORK</p>
@@ -288,7 +309,7 @@ export default function StudentSubmitPage() {
                                 <span className="text-slate-700 truncate">
                                     {selectedClass?.name || 'クラス'}
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-slate-400" />
+                                <ChevronDown className="w-4 h-4 text-black" strokeWidth={4} />
                             </button>
                             {showClassDropdown && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10">
@@ -317,7 +338,7 @@ export default function StudentSubmitPage() {
                                 <span className="text-slate-700 truncate">
                                     {selectedTaskBox ? `${selectedTaskBox.unit_name} - ${selectedTaskBox.task_name}` : '課題箱'}
                                 </span>
-                                <ChevronDown className="w-4 h-4 text-slate-400" />
+                                <ChevronDown className="w-4 h-4 text-black" strokeWidth={4} />
                             </button>
                             {showTaskDropdown && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border z-10">
@@ -541,7 +562,7 @@ export default function StudentSubmitPage() {
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : (
                             <>
-                                <Send className="w-5 h-5" />
+                                <Send className="w-5 h-5 text-black" strokeWidth={4} />
                                 提出する
                             </>
                         )}

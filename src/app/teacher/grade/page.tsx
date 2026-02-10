@@ -343,14 +343,14 @@ export default function TeacherGradePage() {
     // Class Selection View
     if (step === 'class') {
         return (
-            <div className="min-h-screen p-4 md:p-8">
+            <div className="min-h-screen pt-48 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
                 <div className="page-header mb-6">
                     <Link href="/teacher/home" className="back-button">
-                        <ChevronLeft className="w-6 h-6 text-slate-600" />
+                        <ChevronLeft className="w-6 h-6 text-[#0f172a]" />
                     </Link>
                     <div>
-                        <p className="page-subtitle">提出状況確認</p>
-                        <h1 className="page-title">クラス選択</h1>
+                        <h1 className="text-2xl font-black text-[#0f172a] tracking-tight leading-none">STATUS CHECK</h1>
+                        <p className="text-sm font-bold text-[#0f172a] mt-0.5">クラス選択</p>
                     </div>
                 </div>
 
@@ -386,15 +386,15 @@ export default function TeacherGradePage() {
 
     // Detail View
     return (
-        <div className="min-h-screen p-4 md:p-8">
+        <div className="min-h-screen pt-48 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
             {/* Header */}
             <div className="page-header mb-6">
                 <button onClick={() => setStep('class')} className="back-button">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                    <ChevronLeft className="w-6 h-6 text-[#0f172a]" />
                 </button>
                 <div className="flex-1">
-                    <p className="page-subtitle">提出状況確認</p>
-                    <h1 className="page-title">{selectedClass?.name}</h1>
+                    <h1 className="text-2xl font-black text-[#0f172a] tracking-tight leading-none text-left">STATUS CHECK</h1>
+                    <p className="text-sm font-bold text-[#0f172a] mt-0.5 text-left">{selectedClass?.name}</p>
                 </div>
 
                 {/* Task Box Selector */}

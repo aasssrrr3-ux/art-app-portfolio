@@ -311,11 +311,11 @@ export default function TeacherClassDetailPage() {
             {/* Header */}
             <div className="page-header mb-6">
                 <Link href="/teacher/home" className="back-button">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                    <ChevronLeft className="w-6 h-6 text-[#0f172a]" />
                 </Link>
                 <div className="flex-1">
-                    <p className="page-subtitle">CLASS MANAGEMENT</p>
-                    <h1 className="page-title">{classInfo?.name || 'Loading...'}</h1>
+                    <h1 className="text-2xl font-black text-[#0f172a] tracking-tight leading-none">CLASS MANAGEMENT</h1>
+                    <p className="text-sm font-bold text-[#0f172a] mt-0.5">{classInfo?.name || 'Loading...'}</p>
                 </div>
             </div>
 

@@ -201,19 +201,19 @@ export default function TeacherTaskBoxPage() {
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8">
+        <div className="min-h-screen pt-48 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
             {/* Header */}
             <div className="page-header mb-6">
                 <Link href="/teacher/home" className="back-button">
-                    <ChevronLeft className="w-6 h-6 text-slate-600" />
+                    <ChevronLeft className="w-6 h-6 text-[#0f172a]" />
                 </Link>
                 <div className="flex-1">
-                    <p className="page-subtitle">CHECK BOX</p>
-                    <h1 className="page-title">課題箱管理</h1>
+                    <h1 className="text-2xl font-black text-[#0f172a] tracking-tight leading-none">CHECK BOX</h1>
+                    <p className="text-sm font-bold text-[#0f172a] mt-0.5">課題箱管理</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="btn-primary flex items-center gap-2"
+                    className="btn-primary flex items-center gap-2 bg-[#0f172a] hover:bg-[#1e293b]"
                 >
                     <Plus className="w-5 h-5" />
                     新規作成

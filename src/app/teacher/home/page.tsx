@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase, Class } from '@/lib/supabase'
-import { Users, FolderPlus, Share2, ClipboardList, ChevronRight, LogOut, Plus } from 'lucide-react'
+import { Users, FolderPlus, Share2, ClipboardList, ChevronRight, Plus } from 'lucide-react'
 import Link from 'next/link'
 
 export default function TeacherHomePage() {
     const router = useRouter()
-    const { user, loading, signOut } = useAuth()
+    const { user, loading } = useAuth()
     const [classes, setClasses] = useState<Class[]>([])
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [newClassName, setNewClassName] = useState('')
@@ -78,10 +78,7 @@ export default function TeacherHomePage() {
         }
     }
 
-    const handleSignOut = async () => {
-        await signOut()
-        router.push('/')
-    }
+
 
     if (loading) {
         return (
@@ -92,7 +89,7 @@ export default function TeacherHomePage() {
     }
 
     return (
-        <div className="min-h-screen p-8">
+        <div className="min-h-screen pt-48 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
@@ -111,9 +108,9 @@ export default function TeacherHomePage() {
                         <h2 className="text-lg font-bold text-slate-900">クラス一覧</h2>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-1 text-primary hover:text-primary-dark text-sm font-medium"
+                            className="flex items-center gap-1 text-black hover:text-slate-700 text-sm font-bold"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 text-black" strokeWidth={4} />
                             新規作成
                         </button>
                     </div>
@@ -126,17 +123,17 @@ export default function TeacherHomePage() {
                         ) : (
                             classes.map((cls) => (
                                 <Link key={cls.id} href={`/teacher/class/${cls.id}`}>
-                                    <div className="card-soft-sm p-4 flex items-center justify-between hover:shadow-lg transition cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-slate-500" />
+                                    <div className="card-soft-sm p-6 flex items-center justify-between hover:shadow-lg transition cursor-pointer border-2 border-transparent hover:border-black">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center">
+                                                <Users className="w-8 h-8 text-black" strokeWidth={4} />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-900">{cls.name}</p>
-                                                <p className="text-xs text-slate-400">コード: {cls.code}</p>
+                                                <p className="font-black text-2xl text-slate-900">{cls.name}</p>
+                                                <p className="text-sm font-bold text-slate-800">コード: {cls.code}</p>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-5 h-5 text-slate-400" />
+                                        <ChevronRight className="w-8 h-8 text-black" strokeWidth={4} />
                                     </div>
                                 </Link>
                             ))
@@ -144,42 +141,41 @@ export default function TeacherHomePage() {
                     </div>
                 </div>
 
-                {/* Right Column - Menu */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-bold text-slate-900 mb-4">メニュー</h2>
 
                     <Link href="/teacher/taskbox" className="block">
-                        <div className="menu-card py-6 flex-row gap-4 justify-start px-6">
-                            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-                                <FolderPlus className="w-6 h-6 text-white" />
+                        <div className="menu-card py-8 flex-row gap-6 justify-start px-8 border-2 border-transparent hover:border-black transition">
+                            <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center">
+                                <FolderPlus className="w-8 h-8 text-black" strokeWidth={4} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">課題設定</h3>
-                                <p className="text-xs text-slate-500">課題箱の作成・管理</p>
+                                <h3 className="font-black text-xl text-slate-900">課題設定</h3>
+                                <p className="text-sm font-bold text-slate-800">課題箱の作成・管理</p>
                             </div>
                         </div>
                     </Link>
 
                     <Link href="/teacher/share" className="block">
-                        <div className="menu-card py-6 flex-row gap-4 justify-start px-6">
-                            <div className="w-12 h-12 rounded-xl bg-[#22c55e] flex items-center justify-center">
-                                <Share2 className="w-6 h-6 text-white" />
+                        <div className="menu-card py-8 flex-row gap-6 justify-start px-8 border-2 border-transparent hover:border-black transition">
+                            <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center">
+                                <Share2 className="w-8 h-8 text-black" strokeWidth={4} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">資料共有</h3>
-                                <p className="text-xs text-slate-500">生徒への資料共有</p>
+                                <h3 className="font-black text-xl text-slate-900">資料共有</h3>
+                                <p className="text-sm font-bold text-slate-800">生徒への資料共有</p>
                             </div>
                         </div>
                     </Link>
 
                     <Link href="/teacher/grade" className="block">
-                        <div className="menu-card py-6 flex-row gap-4 justify-start px-6">
-                            <div className="w-12 h-12 rounded-xl bg-[#f59e0b] flex items-center justify-center">
-                                <ClipboardList className="w-6 h-6 text-white" />
+                        <div className="menu-card py-8 flex-row gap-6 justify-start px-8 border-2 border-transparent hover:border-black transition">
+                            <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center">
+                                <ClipboardList className="w-8 h-8 text-black" strokeWidth={4} />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-bold text-slate-900">提出状況</h3>
-                                <p className="text-xs text-slate-500">提出状況の確認・評価</p>
+                                <h3 className="font-black text-xl text-slate-900">提出状況</h3>
+                                <p className="text-sm font-bold text-slate-800">提出状況の確認・評価</p>
                             </div>
                         </div>
                     </Link>

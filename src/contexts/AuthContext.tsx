@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, User, Role } from '@/lib/supabase'
-import { Session } from '@supabase/supabase-js'
+import { supabase, AppUser, Role } from '@/lib/supabase'
+import { Session, User } from '@supabase/supabase-js'
 
 interface AuthContextType {
     session: Session | null
-    user: User | null
+    user: AppUser | null
     loading: boolean
-    signIn: (email: string, password: string) => Promise<{ error: Error | null }>
+    signIn: (email: string, password: string) => Promise<{ data: { user: User | null; session: Session | null }; error: Error | null }>
     signUp: (email: string, password: string, name: string, role: string) => Promise<{ error: Error | null }>
     signOut: () => Promise<void>
 }
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter()
     const [session, setSession] = useState<Session | null>(null)
-    const [user, setUser] = useState<User | null>(null)
+    const [user, setUser] = useState<AppUser | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -80,10 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     console.log(`[Auth] Role: ${role}, Redirecting to: ${target}`)
                     router.push(target)
 
-                    // Safety Valve: Force loading end in 2s
+                    // Safety Valve: Force loading end in 5s
                     setTimeout(() => {
+                        console.log('[Auth] Safety valve triggered (5s)')
                         setLoading(false)
-                    }, 2000)
+                    }, 5000)
                 }
 
                 if (event === 'INITIAL_SESSION') {
@@ -115,11 +116,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (currentSession?.user && currentSession.user.user_metadata?.role) {
                 const metadata = currentSession.user.user_metadata
+                // Ensure the object matches AppUser interface
                 setUser({
                     id: currentSession.user.id,
                     email: currentSession.user.email || '',
                     name: metadata.name || 'Unknown',
-                    role: metadata.role,
+                    role: metadata.role as Role,
                     created_at: currentSession.user.created_at
                 })
             }
@@ -136,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .single()
 
             if (!error && data) {
-                setUser(data)
+                setUser(data as AppUser)
             }
         } catch (error: any) {
             // silent fail
@@ -147,14 +149,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signIn = async (email: string, password: string) => {
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             })
             if (error) throw error
-            return { error: null }
+            return { data: { user: data.user, session: data.session }, error: null }
         } catch (error) {
-            return { error: error as Error }
+            return { data: { user: null, session: null }, error: error as Error }
         }
     }
 

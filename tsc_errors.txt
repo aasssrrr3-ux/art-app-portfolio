@@ -1,0 +1,14 @@
+src/app/login/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/login/page.tsx(8,10): error TS2305: Module '"@supabase/auth-helpers-nextjs"' has no exported member 'createClientComponentClient'.
+src/app/student/favorites/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/student/gallery/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/student/home/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/student/layout.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/student/portfolio/page.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/student/submit/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/class/[id]/page.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/grade/page.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/home/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/layout.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/share/page.tsx(5,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.
+src/app/teacher/taskbox/page.tsx(6,10): error TS2305: Module '"@/contexts/AuthContext"' has no exported member 'useAuth'.

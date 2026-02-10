@@ -28,36 +28,38 @@
 }
 
 .theme-teacher {
-  --primary: #0d9488;
-  /* Teal-600 */
-  --primary-dark: #0f766e;
-  /* Teal-700 */
-  --background: #0f172a;
-  /* Slate-900 */
-  color: #ffffff;
+  --primary: #0f172a;
+  /* Deep Navy */
+  --primary-dark: #020617;
+  /* Darker Navy */
+  --accent: #f59e0b;
+  /* Amber */
+  --background: #f0f9ff;
+  /* Sky-50 */
+  color: #0f172a;
+  /* Deep Navy Text */
 }
 
-/* Teacher Theme Text Overrides - High Contrast / Accessibility */
+/* Teacher Theme Text Overrides */
+/* Allow headings to inherit color unless specified */
 .theme-teacher h1,
 .theme-teacher h2,
 .theme-teacher h3,
 .theme-teacher h4,
 .theme-teacher h5,
-.theme-teacher h6,
-.theme-teacher p,
-.theme-teacher span,
-.theme-teacher div,
-.theme-teacher li {
+.theme-teacher h6 {
   color: inherit;
 }
 
+/* Force specific text colors for contrast */
 .theme-teacher .text-slate-900,
 .theme-teacher .text-slate-800,
 .theme-teacher .text-slate-700,
 .theme-teacher .text-slate-600 {
-  color: #f1f5f9 !important;
-  /* Force nearly white */
+  color: #0f172a !important;
+  /* Deep Navy */
 }
+
 
 .theme-teacher .text-slate-500,
 .theme-teacher .text-slate-400 {
@@ -65,20 +67,42 @@
   /* Lighter gray for secondary text */
 }
 
-.theme-teacher .page-title {
-  color: #ffffff !important;
+/* FIX: Restore dark text inside white cards AND Header for Teacher Theme */
+.theme-teacher .card-soft .text-slate-900,
+.theme-teacher .card-soft .text-slate-800,
+.theme-teacher .card-soft .text-slate-700,
+.theme-teacher .card-soft-sm .text-slate-900,
+.theme-teacher .card-soft-sm .text-slate-800,
+.theme-teacher .card-soft-sm .text-slate-700,
+.theme-teacher .menu-card .text-slate-900,
+.theme-teacher .menu-card .text-slate-800,
+.theme-teacher .menu-card .text-slate-700,
+.theme-teacher .page-header .text-slate-900,
+.theme-teacher .page-header .text-slate-800,
+.theme-teacher .page-header .page-title {
+  color: #0f172a !important;
 }
+
+.theme-teacher .card-soft .text-slate-500,
+.theme-teacher .card-soft .text-slate-400,
+.theme-teacher .card-soft-sm .text-slate-500,
+.theme-teacher .card-soft-sm .text-slate-400,
+.theme-teacher .menu-card .text-slate-500,
+.theme-teacher .menu-card .text-slate-400,
+.theme-teacher .page-header .text-slate-500 {
+  color: #64748b !important;
+}
+
+
+/* Remove generic page-title override that forces white */
+/* .theme-teacher .page-title { color: #ffffff !important; } REMOVED */
 
 .theme-teacher .page-subtitle {
-  color: #fcd34d !important;
-  /* Amber-300: High contrast gold for decoration/accents */
+  color: #f59e0b !important;
+  /* Amber */
 }
 
-/* Navbar specific overrides for Teacher */
-.theme-teacher svg {
-  color: #ffffff;
-  /* Make icons white */
-}
+
 
 
 
@@ -248,6 +272,23 @@ body {
   font-weight: 600;
 }
 
+/* Teacher Theme Specific Overrides for Headers */
+.theme-teacher .page-header {
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.theme-teacher .page-title {
+  color: #0f172a !important;
+}
+
+.theme-teacher .page-subtitle {
+  color: #0f172a !important;
+  /* Deep Navy */
+  font-weight: 700 !important;
+}
+
 /* Back button */
 .back-button {
   width: 48px;
@@ -264,4 +305,16 @@ body {
 
 .back-button:hover {
   background: #e2e8f0;
+}
+
+.theme-teacher .back-button {
+  background: #e0f2fe !important;
+  /* Sky-100 */
+  color: #0f172a !important;
+  /* Deep Navy */
+}
+
+.theme-teacher .back-button:hover {
+  background: #bae6fd !important;
+  /* Sky-200 */
 }
