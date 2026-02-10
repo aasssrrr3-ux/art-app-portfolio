@@ -1,7 +1,6 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase, AppUser, Role } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
 
@@ -17,14 +16,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const router = useRouter()
     const [session, setSession] = useState<Session | null>(null)
     const [user, setUser] = useState<AppUser | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        let mounted = true
+
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!mounted) return
             setSession(session)
             if (session?.user) {
                 fetchUser(session.user.id, session)
@@ -32,78 +33,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setLoading(false)
             }
         }).catch(err => {
+            if (!mounted) return
             setLoading(false)
         })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
+                if (!mounted) return
                 setSession(session)
 
-                // LOGIN LOGIC REFINEMENT: Role-based redirect & Safety Net
-                if (event === 'SIGNED_IN') {
-                    let role = session?.user?.user_metadata?.role
-                    let target = '/'
-
-                    // Robust Role Fetching: Fallback to DB if metadata is missing
-                    if (!role && session?.user?.id) {
-                        try {
-                            const { data, error } = await supabase
-                                .from('users')
-                                .select('role')
-                                .eq('id', session.user.id)
-                                .single()
-
-                            if (error) {
-                                // .single() throws if 0 rows, catch it here
-                                console.warn('[Auth] Role fetch from DB failed:', error.message)
-                            } else if (data) {
-                                role = data.role
-                            }
-                        } catch (err) {
-                            console.error('[Auth] Unexpected error fetching role:', err)
-                        }
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    if (session?.user) {
+                        await fetchUser(session.user.id, session)
                     }
-
-                    // Strict Role Check
-                    if (role === 'student') target = '/student/home'
-                    else if (role === 'teacher') target = '/teacher/home'
-                    else {
-                        // Error: Role undefined or invalid
-                        console.error('[Auth] User has no valid role:', role)
-                        alert('ユーザー権限が設定されていません。ログインできません。')
-                        await supabase.auth.signOut() // Prevent stuck state
-                        setLoading(false)
-                        return // Stop here
-                    }
-
-                    console.log(`[Auth] Role: ${role}, Redirecting to: ${target}`)
-                    router.push(target)
-
-                    // Safety Valve: Force loading end in 5s
-                    setTimeout(() => {
-                        console.log('[Auth] Safety valve triggered (5s)')
-                        setLoading(false)
-                    }, 5000)
-                }
-
-                if (event === 'INITIAL_SESSION') {
-                    return
-                }
-
-                if (session?.user) {
-                    await fetchUser(session.user.id, session)
                 } else if (event === 'SIGNED_OUT') {
                     setUser(null)
                     setLoading(false)
+                } else if (event === 'INITIAL_SESSION') {
+                    // Handle initial load completion if getSession hasn't already
+                    if (!session) {
+                        setLoading(false)
+                    }
                 }
             }
         )
 
         return () => {
+            mounted = false
             subscription.unsubscribe()
         }
-    }, [router])
+    }, [])
 
     const fetchUser = async (userId: string, existingSession?: Session | null) => {
         // 1. Optimistic Update from Session Metadata (Immediate)

@@ -2,9 +2,30 @@
 
 import { useRouter } from 'next/navigation'
 import { GraduationCap, Users } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useEffect } from 'react'
 
 export default function HomePage() {
   const router = useRouter()
+  const { user, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (user.role === 'teacher') {
+        router.push('/teacher/home')
+      } else if (user.role === 'student') {
+        router.push('/student/home')
+      }
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#5b5fff] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8">

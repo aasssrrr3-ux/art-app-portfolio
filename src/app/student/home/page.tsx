@@ -34,6 +34,13 @@ export default function StudentHomePage() {
 
     const fetchClasses = async () => {
         setIsFetchingClasses(true)
+
+        // Safety timeout for fetchClasses
+        const safetyTimer = setTimeout(() => {
+            console.log('[StudentHome] Fetch safety timer triggered')
+            setIsFetchingClasses(false)
+        }, 5000)
+
         try {
             if (!user) return
 
@@ -62,6 +69,7 @@ export default function StudentHomePage() {
         } catch (error) {
             console.error('Error fetching classes:', error)
         } finally {
+            clearTimeout(safetyTimer)
             setIsFetchingClasses(false)
         }
     }
@@ -90,7 +98,7 @@ export default function StudentHomePage() {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4 pr-48">
+                <div className="flex items-center gap-3 mr-80">
                     {/* Favorites Link */}
                     <Link href="/student/favorites">
                         <button className="p-2 rounded-full hover:bg-slate-100 transition text-slate-400 hover:text-pink-500">

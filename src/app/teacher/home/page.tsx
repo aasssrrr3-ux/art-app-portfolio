@@ -89,7 +89,7 @@ export default function TeacherHomePage() {
     }
 
     return (
-        <div className="min-h-screen pt-48 px-4 pb-4 md:pt-48 md:px-8 md:pb-8">
+        <div className="min-h-screen pt-24 px-4 pb-4 md:pt-24 md:px-8 md:pb-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
