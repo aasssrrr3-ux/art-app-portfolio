@@ -139,7 +139,7 @@ function LoginForm() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full px-4 py-4 pl-14 border-2 border-slate-200 rounded-xl text-base bg-white focus:outline-none focus:border-[#5b5fff] focus:ring-4 focus:ring-[#5b5fff]/10 transition"
-                                    placeholder={isTeacher ? 'teacher@test.com' : 'student01@example.com'}
+                                    placeholder={isTeacher ? 'teacher@school.edu' : 'student01@example.com'}
                                     required
                                 />
                             </div>
@@ -245,26 +245,7 @@ function LoginForm() {
                         )}
                     </form>
 
-                    {/* Test Account Info */}
-                    <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">
-                            テストアカウント
-                        </p>
-                        <div className="text-sm text-slate-700">
-                            {isTeacher ? (
-                                <>
-                                    Email: <code className="bg-slate-200 px-1 rounded">teacher@test.com</code><br />
-                                    Pass: <code className="bg-slate-200 px-1 rounded">teacher123</code>
-                                </>
-                            ) : (
-                                <>
-                                    Email: <code className="bg-slate-200 px-1 rounded font-mono">student01@example.com</code><br />
-                                    Pass: <code className="bg-slate-200 px-1 rounded font-mono">student123</code>
-                                    <p className="mt-1 text-slate-400">※デバッグ用アカウントです</p>
-                                </>
-                            )}
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
