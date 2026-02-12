@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Home, LogOut } from 'lucide-react'
+import { Home, Settings } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
@@ -11,19 +11,7 @@ export default function TeacherLayout({
 }: {
     children: React.ReactNode
 }) {
-    const { signOut, user } = useAuth()
     const router = useRouter()
-
-    const handleSignOut = async () => {
-        try {
-            await signOut()
-            router.refresh()
-            router.replace('/login')
-        } catch (e) {
-            console.error('Logout failed:', e)
-            router.replace('/login')
-        }
-    }
 
     return (
         <div className="theme-teacher min-h-screen bg-[#f0f9ff] text-slate-900 pb-20 md:pb-0 relative">
@@ -44,14 +32,14 @@ export default function TeacherLayout({
                     <Home className="w-5 h-5 md:w-6 md:h-6 text-black" strokeWidth={4} />
                 </Link>
 
-                {/* Logout Button */}
-                <button
-                    onClick={handleSignOut}
-                    className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-sm flex items-center justify-center hover:bg-slate-50 transition cursor-pointer"
-                    title="ログアウト"
+                {/* Settings Button (Logout moved inside) */}
+                <Link
+                    href="/teacher/settings"
+                    className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-sm flex items-center justify-center hover:bg-slate-50 transition"
+                    title="設定"
                 >
-                    <LogOut className="w-5 h-5 md:w-6 md:h-6 text-black" strokeWidth={4} />
-                </button>
+                    <Settings className="w-5 h-5 md:w-6 md:h-6 text-black" strokeWidth={4} />
+                </Link>
             </div>
 
             {children}
